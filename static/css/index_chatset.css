@@ -1,0 +1,151 @@
+.slider-group {
+    margin: 10px 0;
+}
+.slider-title {
+    font-size: 14px;
+    margin-bottom: 6px;
+    color: #333;
+}
+.slider-box {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.slider-box input[type="number"] {
+    border-radius: 4px;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    width: 50px;
+    padding: 4px;
+    font-size: 14px;
+}
+.slider-box input[type="number"]::-webkit-inner-spin-button,
+.slider-box input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+/* 滑条通用样式 */
+.slider-box input[type="range"] {
+    width: 180px;
+    height: 6px;
+}
+.setting-box {
+    opacity: 0;
+    position: fixed;
+    top: 50%;
+    /* 垂直方向中心 */
+    left: 50%;
+    /* 水平方向中心 */
+    transform: translate(-50%, -50%);
+    /* 把元素自身宽高的一半向上和向左移动，实现真正居中 */
+    z-index: 1003;
+    height: 450px;
+    width: 700px;
+    padding: 22px 24px;
+    border-radius: 24px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    background: #ffffff;
+}
+/* 为body添加背景 */
+body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(2px);
+        /* 可选：添加模糊效果 */
+    z-index: -1;
+}
+
+body.mask::before {
+    z-index: 1002;
+}
+
+.setting-box h2 {
+    margin-top: 0;
+    padding-bottom: 4px;
+}
+.setting-box button {
+    margin-left: 20px;
+    float: right;
+    background-color: #19c37d;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 6px 8px;
+    font-size: 18px;
+}
+.setting-box button:hover {
+    background: #13a06b;
+}
+#chatset {
+    display: flex;
+    height: 80%;
+}
+#imageDiv {
+    margin: auto;
+    width: 80px;
+    height: 80px;
+    margin-bottom: 15px;
+    border: 1px solid #ccc;
+    border-radius: 50px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    overflow: hidden;
+}
+#imageDiv img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: cover;
+}
+/* 通用输入块 */
+.input-group {
+    position: relative;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    padding: 18px 12px 10px;
+    margin-bottom: 20px;
+    background: #fff;
+}
+/* 标签 */
+.input-group label {
+    position: absolute;
+    top: -0.6em;
+    left: 12px;
+    padding: 0 6px;
+    background: #fff;
+    font-size: 14px;
+    color: #333;
+}
+/* 输入框 */
+.input-group input,
+.input-group textarea {
+    width: 100%;
+    font-size: 16px;
+    border: none;
+    outline: none;
+    background: transparent;
+    resize: none;
+    line-height: 1.6;
+}
+.input-group textarea {
+    min-height: 120px;
+    max-height: 300px;
+    overflow-y: auto;
+}
+/* 滚动条美化 */
+.input-group textarea::-webkit-scrollbar {
+    width: 6px;
+    background: transparent;
+}
+.input-group textarea::-webkit-scrollbar-thumb {
+    background: #d1d5db;
+    border-radius: 6px;
+}
+.input-group textarea::-webkit-scrollbar-thumb:hover {
+    background: #b0b3b8;
+}

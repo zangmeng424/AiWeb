@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>简化版 ChatGPT</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: system-ui, -apple-system, sans-serif;
+            display: flex;
+            height: 100vh;
+            background: #f7f7f8;
+            color: #333;
+        }
+    </style>
+    <link rel="stylesheet" href="index_chatset.css">
+    <link rel="stylesheet" href="index_sidebar.css">
+    <link rel="stylesheet" href="index_main.css">
+    
+    <link rel="stylesheet" href="/static/css/index_chatset.css">
+    <link rel="stylesheet" href="/static/css/index_sidebar.css">
+    <link rel="stylesheet" href="/static/css/index_main.css">
+    <script src="axios.min.js"></script>
+    <script src="/static/js/axios.min.js"></script>
+</head>
+
+<body>
+
+    <div class="setting-box" style="display: none;">
+        <h2>对话设置</h2>
+        <div id="chatset">
+            <div style="width: 400px;">
+                <input type="text" id="session_id" style="display:none;">
+                <div id="imageDiv">
+                    <img id="displayImage" src="" alt="">
+                </div>
+                <input type="file" id="fileInput" name="image" style="display:none;" accept="image/*">
+                <!-- 文本输入框 -->
+                <div class="input-group">
+                    <label for="task_name">名称</label>
+                    <input id="task_name" type="text">
+                </div>
+                <!-- 多行输入框 -->
+                <div class="input-group">
+                    <label for="chat-input">系统提示</label>
+                    <textarea id="system" maxlength="300"></textarea>
+                </div>
+            </div>
+            <div
+                style="width: 300px; padding-left: 10px; display: flex; flex-direction: column;  align-items: center; padding-top: 50px;">
+                <!-- 文本输入框 -->
+                <div class="input-group">
+                    <label for="chat_model">模型</label>
+                    <input id="chat_model" type="text" value="DeepSeek">
+                </div>
+    
+                <div class="slider-group">
+                    <div class="slider-title">上下文消息数量上限</div>
+                    <div class="slider-box">
+                        <input type="range" id="max_take" min="0" max="20" value="20" step="2" list="max_take_tick">
+                        <datalist id="max_take_tick">
+                            <option value="0"></option>
+                            <option value="2"></option>
+                            <option value="4"></option>
+                            <option value="6"></option>
+                            <option value="8"></option>
+                            <option value="10"></option>
+                            <option value="12"></option>
+                            <option value="14"></option>
+                            <option value="16"></option>
+                            <option value="18"></option>
+                            <option value="20"></option>
+                        </datalist>
+                        <input type="number" id="max_take_in" min="0" max="20" value="20" step="2">
+                    </div>
+                </div>
+    
+                <div class="slider-group">
+                    <div class="slider-title">严谨与想象(Temperature)</div>
+                    <div class="slider-box">
+                        <input type="range" id="temperature" min="0" max="2" value="2" step="0.01" list="temperature_tick">
+                        <datalist id="temperature_tick">
+                            <option value="0.0" label="代码生成"></option>
+                            <option value="1.0"></option>
+                            <option value="1.3"></option>
+                            <option value="1.5"></option>
+                        </datalist>
+                        <input type="number" id="temperature_in" min="0" max="2" value="2" step="0.01">
+                    </div>
+                </div>
+
+                <div class="slider-group">
+                    <div class="slider-title">Top P</div>
+                    <div class="slider-box">
+                        <input type="range" id="top_p" min="0" max="1" value="1" step="0.01">
+                        <input type="number" id="top_p_in" min="0" max="1" value="1" step="0.01">
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div style=" position: absolute;bottom: 20px;right: 40px;display: flex;">
+            <button id="setbox-cancel">取消</button>
+            <button id="setbox-save">保存</button>
+        </div>
+    </div>
+
+    <!-- 左侧侧栏 -->
+    <div id="sidebar">
+        <header>
+            <div class="sidebar-btn-hover" id="toggle-btn">☰</div>
+        </header>
+
+        <div class="sidebar-component-library">
+            <a id="new_chat" class="sidebar-btn-hover sidebar-entry" href="/chat/new">
+                <div class="sidebar-entry-svg">
+                    <svg width="20" height="20" viewBox="0 0 48 48" fill="none"
+                        xmlns="http://www.w3.org/2000/svg">
+                        <path d="M19 10V7C19 5.89543 19.8954 5 21 5H41C42.1046 5 43 5.89543 43 7V29C43 30.1046 42.1046 31 41 31H37"
+                            stroke="#000000" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+                        <rect x="5" y="18" width="24" height="24" rx="2" fill="none" stroke="#000000" stroke-width="3"
+                            stroke-linecap="round" stroke-linejoin="round" />
+                        <path d="M17 25V35" stroke="#000000" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+                        <path d="M12 30H22" stroke="#000000" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                </div>
+                <div style="padding-left: 8px;"></div>
+                <div class="sidebar-entry-txt">新对话</div>
+            </a>
+
+            <a class="sidebar-btn-hover sidebar-entry" href="/123">
+                <div class="sidebar-entry-svg">
+                    <svg width="20" height="20" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M8 44L8 6C8 4.89543 8.89543 4 10 4H38C39.1046 4 40 4.89543 40 6V44L24 35.7273L8 44Z" fill="none"
+                            stroke="#333" stroke-width="3" stroke-linejoin="round" />
+                        <path d="M23.9497 13.9497L23.9497 25.9497" stroke="#333" stroke-width="3" stroke-linecap="round"
+                            stroke-linejoin="round" />
+                        <path d="M17.9497 19.9497L29.9497 19.9497" stroke="#333" stroke-width="3" stroke-linecap="round"
+                            stroke-linejoin="round" />
+                    </svg>
+                </div>
+                <div style="padding-left: 8px;"></div>
+                <div class="sidebar-entry-txt">插件库</div>
+            </a>
+
+
+        </div>
+        
+        <div class="sidebar-component-library" id="chat-history-list">
+
+        </div>
+
+        <!-- 侧边栏页脚 -->
+        <div id="sidebar-footer">
+            <div class="footer-setting sidebar-btn-hover">
+                <svg width="20" height="20" viewBox="0 0 48 48" fill="none"
+                    xmlns="http://www.w3.org/2000/svg">
+                    <path d="M34.0003 41L44 24L34.0003 7H14.0002L4 24L14.0002 41H34.0003Z" fill="none" stroke="#000000" stroke-width="3"
+                        stroke-linejoin="round" />
+                    <path
+                        d="M24 29C26.7614 29 29 26.7614 29 24C29 21.2386 26.7614 19 24 19C21.2386 19 19 21.2386 19 24C19 26.7614 21.2386 29 24 29Z"
+                        fill="none" stroke="#000000" stroke-width="3" stroke-linejoin="round" />
+                </svg>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- 半透明遮罩 -->
+    <div id="global-mask"></div>
+
+    <!-- 主区域 -->
+    <div id="main">
+        <div id="chat-area">
+            <div id="chat-in">
+
+            </div>
+            <div style="display: none;">
+                <input id="max_take_now">
+            </div>
+        </div>
+        <div id="input-box">
+            <div id="input-area">
+                <textarea id="chat-input" placeholder="请输入问题..." maxlength="1000"></textarea>
+
+                <div id="send-down">
+                    <button id="send-btn">
+                        <svg width="20" height="20" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M24 6V42" stroke="#ffffff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
+                        <path d="M12 18L24 6L36 18" stroke="#ffffff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            <!-- 预留 -->
+            <div style="height: 30px;width: 100%;justify-content: center;display: flex;align-items: center; color: #adb2b8; font-size: 12px;">预留</div>
+        </div>
+    </div>
+
+    <!-- 等待被加载组建 -->
+    <div id="source" style="display: none;">
+        <div class="csp">
+            <div class="csp-c" id="csp-edit">
+                <div class="sidebar-entry-svg csp-svg">
+                    <?xml version="1.0" encoding="UTF-8"?><svg width="20" height="20" viewBox="0 0 48 48" fill="none"
+                        xmlns="http://www.w3.org/2000/svg">
+                        <path fill-rule="evenodd" clip-rule="evenodd" d="M24 24V19L39 4L44 9L29 24H24Z" fill="none"
+                            stroke="#000000" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+                        <path
+                            d="M16 24H9C6.23858 24 4 26.2386 4 29C4 31.7614 6.23858 34 9 34H39C41.7614 34 44 36.2386 44 39C44 41.7614 41.7614 44 39 44H18"
+                            stroke="#000000" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                </div>
+                编辑
+            </div>
+        
+            <div class="csp-c" id="csp-put">
+                <div class="sidebar-entry-svg csp-svg">
+                    <?xml version="1.0" encoding="UTF-8"?><svg width="20" height="20" viewBox="0 0 48 48" fill="none"
+                        xmlns="http://www.w3.org/2000/svg">
+                        <path d="M42 27C42 33 38 43 24 43C10 43 6 33 6 27" stroke="#000000" stroke-width="3"
+                            stroke-linecap="round" stroke-linejoin="round" />
+                        <path d="M24.0078 5.10059V33.0001" stroke="#000000" stroke-width="3" stroke-linecap="round"
+                            stroke-linejoin="round" />
+                        <path d="M12 17L24 5L36 17" stroke="#000000" stroke-width="3" stroke-linecap="round"
+                            stroke-linejoin="round" />
+                    </svg>
+                </div>
+                导出
+            </div>
+        
+            <div class="csp-c" id="csp-del">
+                <div class="sidebar-entry-svg csp-svg">
+                    <?xml version="1.0" encoding="UTF-8"?><svg width="20" height="20" viewBox="0 0 48 48" fill="none"
+                        xmlns="http://www.w3.org/2000/svg">
+                        <path d="M9 10V44H39V10H9Z" fill="none" stroke="#ff0000" stroke-width="3" stroke-linejoin="round" />
+                        <path d="M20 20V33" stroke="#ff0000" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+                        <path d="M28 20V33" stroke="#ff0000" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+                        <path d="M4 10H44" stroke="#ff0000" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+                        <path d="M16 10L19.289 4H28.7771L32 10H16Z" fill="none" stroke="#ff0000" stroke-width="3"
+                            stroke-linejoin="round" />
+                    </svg>
+                </div>
+                删除
+            </div>
+        </div>
+
+        <div class="c-system">
+            SYSTEM:<div class="content" contenteditable="true"></div>
+        </div>
+
+        <div class="c-user">
+            <div class="content"></div>
+            <div class="user-group">
+                <div class="copy sidebar-btn-hover" aria-label="复制">
+                    <svg width="20" height="20" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path
+                            d="M13 12.4316V7.8125C13 6.2592 14.2592 5 15.8125 5H40.1875C41.7408 5 43 6.2592 43 7.8125V32.1875C43 33.7408 41.7408 35 40.1875 35H35.5163"
+                            stroke="#5d5d5d" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+                        <path
+                            d="M32.1875 13H7.8125C6.2592 13 5 14.2592 5 15.8125V40.1875C5 41.7408 6.2592 43 7.8125 43H32.1875C33.7408 43 35 41.7408 35 40.1875V15.8125C35 14.2592 33.7408 13 32.1875 13Z"
+                            fill="none" stroke="#5d5d5d" stroke-width="3" stroke-linejoin="round" />
+                    </svg>
+                </div>
+                <div class="user-edit sidebar-btn-hover" aria-label="编辑">
+                    <svg width="20" height="20" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M7 42H43" stroke="#5d5d5d" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+                        <path d="M11 26.7199V34H18.3172L39 13.3081L31.6951 6L11 26.7199Z" fill="none" stroke="#5d5d5d"
+                            stroke-width="3" stroke-linejoin="round" />
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <div class="c-assistant">
+            <div class="content"></div>
+            <div class="assistant-more-info"></div>
+            <div class="assistant-group">
+                <div class="copy sidebar-btn-hover" aria-label="复制">
+                    <svg width="20" height="20" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path
+                            d="M13 12.4316V7.8125C13 6.2592 14.2592 5 15.8125 5H40.1875C41.7408 5 43 6.2592 43 7.8125V32.1875C43 33.7408 41.7408 35 40.1875 35H35.5163"
+                            stroke="#5d5d5d" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+                        <path
+                            d="M32.1875 13H7.8125C6.2592 13 5 14.2592 5 15.8125V40.1875C5 41.7408 6.2592 43 7.8125 43H32.1875C33.7408 43 35 41.7408 35 40.1875V15.8125C35 14.2592 33.7408 13 32.1875 13Z"
+                            fill="none" stroke="#5d5d5d" stroke-width="3" stroke-linejoin="round" />
+                    </svg>
+                </div>
+                <div class="try-again sidebar-btn-hover" aria-label="重试">
+                    <svg width="20" height="20" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M42 8V24" stroke="#5d5d5d" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+                        <path d="M6 24L6 40" stroke="#5d5d5d" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+                        <path
+                            d="M42 24C42 14.0589 33.9411 6 24 6C18.9145 6 14.3216 8.10896 11.0481 11.5M6 24C6 33.9411 14.0589 42 24 42C28.8556 42 33.2622 40.0774 36.5 36.9519"
+                            stroke="#5d5d5d" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <div class="tools-call-box">
+            <div>tools-call</div>
+            <div class="tools-call-name">工具名：<div class="tools-content"></div>
+            </div>
+            <div class="tools-call-id">分配id：<div class="tools-content"></div>
+            </div>
+            <div class="tools-call-params">参数：<div class="tools-content"></div>
+            </div>
+            <div class="tools-call-return">工具响应：<div class="tools-content"></div>
+            </div>
+            <div class="tools-call-actions">
+                <button class="btn-cancel">撤销</button>
+                <button class="btn-confirm">批准</button>
+            </div>
+        </div>
+
+        <div id="chat-tree">
+            <div class="check-button sidebar-btn-hover" >
+                <svg width="20" height="20" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M31 36L19 24L31 12" stroke="#000000" stroke-width="3" stroke-linecap="round"
+                        stroke-linejoin="round" />
+                </svg>
+            </div>
+        
+            <div id="check-content"></div>
+        
+            <div class="check-button sidebar-btn-hover">
+                <svg width="20" height="20" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M19 12L31 24L19 36" stroke="#000000" stroke-width="3" stroke-linecap="round"
+                        stroke-linejoin="round" />
+                </svg>
+            </div>
+        </div>
+
+        <div id="edit-msg-box">
+            <textarea id="edit-msg"></textarea>
+            <div class="edit-buttons">
+                <div class="edit-cancel">取消</div>
+                <div class="edit-send">发送</div>
+            </div>
+        </div>
+
+    </div>
+
+    <div id="tips"></div>
+
+    <!-- 对话历史操作 -->
+    <script type="module">
+
+        const chatHistoryList = document.getElementById('chat-history-list')
+
+        chatHistoryList.addEventListener('mouseenter', function () {
+            chatHistoryList.classList.add('show-scrollbar')
+        })
+
+        chatHistoryList.addEventListener('mouseleave', function () {
+            chatHistoryList.classList.remove('show-scrollbar')
+        })
+ 
+
+    </script>
+
+    <!-- 侧边栏收缩相关 -->
+    <script type="module">
+        const sidebar = document.getElementById("sidebar")
+        const toggleBtn = document.getElementById("toggle-btn")
+        const sidebarMask = document.getElementById("global-mask")
+        let isManualExpand = false
+        const COLLAPSE_WIDTH = 780
+            
+        !(function () {
+                // 判断开屏页面大小
+                const w = window.innerWidth
+                if (w < COLLAPSE_WIDTH) sidebar.classList.add("collapsed")
+            })()
+
+        // 侧栏折叠
+        toggleBtn.addEventListener("click", () => {
+            const w = window.innerWidth
+            sidebar.classList.toggle("collapsed")
+            if (!sidebar.classList.contains("collapsed")) {
+                if (w < COLLAPSE_WIDTH) {
+                    sidebar.classList.add("overlay")
+                    sidebarMask.style.display = "block"
+                    isManualExpand = true
+                }
+            } else {
+                sidebar.classList.remove("overlay")
+                sidebarMask.style.display = "none"
+            }
+        })
+                
+        // 点击遮罩收起侧边栏
+        sidebarMask.onclick = () => {
+            sidebar.classList.add("collapsed")
+            sidebar.classList.remove("overlay")
+            sidebarMask.style.display = "none"
+            isManualExpand = false
+        }
+
+        window.addEventListener("resize", () => {
+            const w = window.innerWidth
+            if (w < COLLAPSE_WIDTH) {
+                if (!isManualExpand) {
+                    sidebar.classList.add("collapsed")
+                    sidebar.classList.remove("overlay")
+                    sidebarMask.style.display = "none"
+                }
+            } else {
+                if (sidebarMask.style.display != "none"){
+                    sidebar.classList.remove("overlay")
+                    sidebarMask.style.display = "none"
+                    sidebar.classList.add("collapsed")
+                }
+                isManualExpand = false
+            }
+        })
+    </script>
+
+    <!-- 对话设置 -->
+    <script type="module">
+        const imageDiv = document.querySelector('.setting-box #imageDiv')
+        const fileInput = document.querySelector('.setting-box #fileInput')
+        const displayImage = document.querySelector('.setting-box #displayImage')
+        //document.getElementById('displayImage').src    图片base64
+        // 点击div触发文件选择
+        imageDiv.addEventListener('click', () => {
+            fileInput.click()
+        })
+
+        // 选择图片后显示在div里
+        fileInput.addEventListener('change', (event) => {
+            const file = event.target.files[0]
+            if (file) {
+                const reader = new FileReader()
+                reader.onload = function (e) {
+                    displayImage.src = e.target.result // 显示选择的图片
+                    const base64Data = e.target.result // 这里就是 Base64
+                    console.log(base64Data)
+                }
+                reader.readAsDataURL(file)
+            }
+        })
+
+        // 通用绑定函数
+        function bindSlider(sliderId, inputId) {
+            const slider = document.getElementById(sliderId)
+            const input = document.getElementById(inputId)
+
+            // 滑条变化 → 输入框
+            slider.addEventListener("input", () => {
+                input.value = slider.value
+            })
+
+            // 输入框变化 → 滑条
+            input.addEventListener("input", () => {
+                let val = Number(input.value)
+                if (val < slider.min) val = slider.min
+                if (val > slider.max) val = slider.max
+                slider.value = val
+                input.value = val
+            })
+        }
+
+        // 绑定两个滑条
+        bindSlider("max_take", "max_take_in")
+        bindSlider("temperature", "temperature_in")
+        bindSlider("top_p", "top_p_in")
+
+        function chatset_save() {
+            const setbox = document.querySelector('.setting-box')
+            axios.post('/api/setting/task', {
+                session_id: setbox.querySelector("#session_id").value,
+                task_name: setbox.querySelector("#task_name").value,
+                system: setbox.querySelector("#system").value,
+                avatar: setbox.querySelector('#displayImage').src,
+                model: setbox.querySelector("#chat_model").value,
+                max_take: setbox.querySelector("#max_take_in").value,
+                temperature: setbox.querySelector("#temperature_in").value,
+                top_p: setbox.querySelector("#top_p_in").value
+                })
+                .then(response => {
+                    // 获取返回的 JSON 数据
+                    console.log(response.data)
+                    if (response.data.code == 1) {
+                        alert(response.data.msg)
+                    } else {
+                        console.log(response.data.msg)
+                        alert(response.data.msg)
+                    }
+                })
+                .catch(error => {
+                    // 如果有错误则输出到控制台
+                    console.error('请求出错:', error)
+                })
+
+            setbox.classList.add('fade-out')
+            setTimeout(() => {
+                setbox.classList.remove('fade-out')
+                setbox.style.display = "none"
+                document.body.classList.remove('mask')
+            }, 150)
+        }
+
+        function chatset_cancel() {
+            const setbox = document.querySelector('.setting-box')
+            setbox.classList.add('fade-out')
+            setTimeout(() => {
+                setbox.classList.remove('fade-out')
+                setbox.style.display = "none"
+                document.body.classList.remove('mask')
+            }, 150)
+        }
+    
+        document.querySelector('.setting-box #setbox-cancel').addEventListener("click", chatset_cancel)
+        document.querySelector('.setting-box #setbox-save').addEventListener("click", chatset_save)
+        
+    
+    </script>
+
+    <script type="module" src="/static/js/index_main.js"></script>
+
+<script>
+
+</script>
+
+
+
+
+
+</body>
+
+</html>

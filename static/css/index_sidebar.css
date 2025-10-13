@@ -1,0 +1,277 @@
+/* 侧栏 */
+#sidebar {
+    text-align: center;
+    border-right: 1px solid rgba(0, 0, 0, .04);
+    width: 245px;
+    background: #F9F9F9;
+    color: #000000;
+    display: flex;
+    flex-direction: column;
+    transition: width 0.25s ease;
+    user-select: none;
+}
+
+#sidebar.collapsed {
+    width: 50px;
+}
+
+#sidebar header {
+    padding: 6px;
+    font-weight: bold;
+    text-align: center;
+    height: 36px;
+}
+
+#sidebar button {
+    background: none;
+    border: none;
+    color: #000000;
+    padding: 0.75rem 1rem;
+    text-align: left;
+    cursor: pointer;
+    width: 100%;
+}
+
+#sidebar button:hover {
+    background: #2a2b32;
+}
+
+.sidebar-component-library a {
+    text-decoration: none;
+    color: inherit;
+    outline: none;
+}
+
+#toggle-btn {
+    float: right;
+    align-items: center;
+    appearance: button;
+    border: 0 solid rgba(13, 13, 13, .05);
+    border-radius: 8px;
+    color: #8f8f8f;
+    cursor: w-resize;
+    display: flex;
+    font-size: 16px;
+    height: 36px;
+    justify-content: center;
+    min-block-size: auto;
+    min-height: auto;
+    min-inline-size: auto;
+    min-width: auto;
+    padding: 0;
+    tab-size: 4;
+    text-decoration: #8f8f8f;
+    text-size-adjust: 100%;
+    text-wrap-mode: nowrap;
+    width: 36px;
+}
+
+.sidebar-btn-hover:hover {
+    background-color: rgba(0, 0, 0, .07);
+}
+
+.sidebar-component-library {
+    padding: 8px 0 12px 0;
+    text-align: center;
+
+}
+
+.sidebar-entry {
+    margin: 0 6px 0 6px;
+    padding: 6px 10px 6px 10px;
+    border-radius: 10px;
+    user-select: none;
+    height: 24px;
+    display: flex;
+    align-items: center;
+}
+
+.sidebar-entry-txt {
+    text-align: left;
+    white-space: nowrap;
+    opacity: 1;
+    max-width: 200px;
+    transition: opacity 0.3s, max-width 0.3s;
+    overflow: hidden;
+    display: inline-block;
+    /* 保持布局不影响SVG */
+}
+
+#sidebar.collapsed .sidebar-entry-txt {
+    opacity: 0;
+    max-width: 0;
+    pointer-events: none;
+}
+
+#sidebar.collapsed #chat-history-list {
+    display: none;
+}
+
+.sidebar-entry-svg {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 24px;
+    /* 与.sidebar-entry高度一致 */
+}
+
+/* index_sidebar.css */
+
+#sidebar.overlay {
+    position: fixed;
+    left: 0;
+    top: 0;
+    height: 100vh;
+    width: 245px;
+    z-index: 1001;
+    box-shadow: 2px 0 12px rgba(0, 0, 0, 0.12);
+    background: #F9F9F9;
+    transition: width 0.25s, left 0.25s;
+}
+
+/* 半透明遮罩 */
+#global-mask {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.35);
+    z-index: 1000;
+    display: none;
+}
+
+/* 小屏时侧边栏覆盖主区域 */
+@media (max-width: 780px) {
+    #sidebar {
+        position: fixed;
+        left: 0;
+        top: 0;
+        height: 100vh;
+        z-index: 1001;
+    }
+    #main {
+        margin-left: 50px;
+    }
+   
+}
+
+#chat-history-list{
+    overflow-y: auto;
+}
+
+#chat-history-list a{
+    justify-content: space-between;
+}
+
+/* 默认隐藏滚动条 */
+#chat-history-list::-webkit-scrollbar {
+    width: 0;
+    background: transparent;
+    transition: width 0.2s;
+}
+
+/* 鼠标移入时显示滚动条 */
+#chat-history-list.show-scrollbar::-webkit-scrollbar {
+    width: 6px;
+    background: transparent;
+    transition: width 0.2s;
+}
+
+#chat-history-list::-webkit-scrollbar-thumb {
+    background: #d1d5db;
+    border-radius: 6px;
+}
+
+#chat-history-list::-webkit-scrollbar-thumb:hover {
+    background: #b0b3b8;
+}
+
+
+.chat-setting{
+    width: 24px;
+    border-radius: 24px;
+    transition: background-color 0.2s;
+}
+
+.chat-setting:hover{
+    background-color: rgba(0, 0, 0, .1);
+}
+
+.csp {
+    opacity: 0;
+    height: 120px;
+    width: 116px;
+    background-color: white;
+    border-radius: 12px;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    padding: 4px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.active {
+    opacity: 1;
+    transition: opacity 0.2s;
+}
+
+.fade-out {
+    opacity: 0;
+    transition: opacity 0.15s;
+}
+
+
+
+.csp-c {
+    display: flex;
+    height: 24px;
+    border-radius: 8px;
+    padding: 8px 10px 8px 10px;
+    align-items: center;
+}
+
+.csp-c:hover {
+    background-color: rgba(0, 0, 0, .06);
+}
+
+#csp-del {
+    color: red;
+}
+
+#csp-del:hover {
+    background-color: rgba(255, 0, 0, 0.06);
+}
+
+.csp-svg {
+    padding-right: 8px;
+}
+
+
+#sidebar-footer {
+    padding: 6px;
+    font-weight: bold;
+    text-align: center;
+    height: 36px;
+    margin-top: auto;
+    /* 关键，让页脚自动贴底 */
+    background: #f7f7f8;
+    border-top: 1px solid #ececec;
+}
+
+.footer-setting{
+    float: right;
+    align-items: center;
+    background-color: transparent;
+    border: 0 solid rgba(13, 13, 13, .05);
+    border-radius: 8px;
+    color: #8f8f8f;
+    display: flex;
+    font-size: 16px;
+    height: 36px;
+    justify-content: center;
+    padding: 0;
+    text-decoration: #8f8f8f;
+    text-size-adjust: 100%;
+    text-wrap-mode: nowrap;
+    width: 36px;
+}
+

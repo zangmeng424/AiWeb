@@ -1,0 +1,62 @@
+import json
+from flask import current_app
+
+
+def get_history_dao(session_id:str) -> json:
+    db = current_app.db
+
+    #拿取max_take和system
+    sql = "SELECT max_take, system FROM chat_menu WHERE session_id = %s"
+    take_info=db.query(sql, (session_id,))
+    ststem=take_info[0]["system"]
+    max_take=take_info[0]["max_take"]
+
+    #拿取最新消息uuid
+    sql = "SELECT chat_uuid FROM chat_history WHERE session_id = %s AND role != 'tool' ORDER BY created_at DESC LIMIT 1 "
+    last_msg_id = db.query(sql, (session_id,))
+
+    rt_data = {
+        "session_id":session_id,
+        "max_take": max_take,
+        "system": ststem,
+        "last_msg_id": last_msg_id[0]["chat_uuid"],
+        "data": {}
+    }
+
+    #查询主要数据
+    sql = "SELECT chat_uuid,role,children,metadata FROM chat_history WHERE session_id = %s ORDER BY created_at ASC"
+    history_data = db.query(sql, (session_id,))
+
+    for data_c in history_data:
+        if data_c["role"] == "tool":
+            rt_data["data"][data_c["chat_uuid"]]["tool_return"] = json.loads(data_c["metadata"])
+        else:
+            rt_data["data"][data_c["chat_uuid"]]={
+                **json.loads(data_c["metadata"]),
+                "role": data_c["role"],
+                "children": json.loads(data_c["children"] if data_c["children"] else [])
+            }
+
+    return rt_data
+
+
+def update_history_dao(msg_json:json) -> json:
+    db = current_app.db
+    #更新最新消息
+    sql = "INSERT INTO chat_history (session_id,chat_uuid,role,content,children,metadata,created_at) VALUES (%s,%s,%s,%s,%s,%s,%s)"
+    db.execute(sql, (msg_json["session_id"],msg_json["chat_uuid"],msg_json["role"],msg_json["metadata"]["content"],json.dumps([]),json.dumps(msg_json["metadata"]),msg_json["created_at"],))
+
+    metadata = msg_json["metadata"]
+    if metadata["parent_id"]:
+        #拿取更新消息的父消息的children初始消息
+        sql = "SELECT children FROM chat_history WHERE chat_uuid = %s"
+        result=db.query(sql,(metadata["parent_id"],))
+        children = result[0]["children"]
+        children =json.loads(children) if json.loads(children) else []
+        children.append(msg_json["chat_uuid"])
+        # 更新更新消息的父消息的children
+        sql = "UPDATE chat_history SET children = %s WHERE chat_uuid = %s and role != 'tool'"
+        db.execute(sql, (json.dumps(children),metadata["parent_id"],))
+
+
+    return True

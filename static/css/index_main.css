@@ -1,0 +1,428 @@
+/* 主区域整体布局 */
+#main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background: #ffffff;
+    position: relative;
+    
+}
+
+/* 聊天区可滚动 */
+#chat-area {
+    flex: 1;
+    overflow-y: auto;
+    box-sizing: border-box;
+    width: 100%;
+    margin-right: 50px;
+    overflow-y: auto;
+    scrollbar-gutter: stable both-edges;
+    /* 始终预留滚动条宽度，避免内容抖动 */
+}
+
+#chat-area::-webkit-scrollbar {
+    width: 8px;
+    background: transparent;
+}
+
+#chat-area::-webkit-scrollbar-thumb {
+    background: #d1d5db;
+    border-radius: 6px;
+}
+
+#chat-area::-webkit-scrollbar-thumb:hover {
+    background: #b0b3b8;
+}
+
+#chat-in {
+        /* 预留滚动条宽度 */
+    width: 80%;
+    max-width: 800px;
+    margin: auto;
+
+    /* 保持文字不压缩，自动换行 */
+    word-break: break-word;
+    /* 防止超长单词撑破容器 */
+    margin-bottom: 100px;
+
+}
+
+#input-box{
+    width: 100%;
+    white-space: pre-wrap;
+    word-break: break-word;
+    display: flex;
+    flex-wrap: wrap;
+    margin-top: -30px;
+}
+
+
+/* 输入区固定底部居中 */
+#input-area {
+    margin: auto;
+    width: 80%;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    background: #f7f7f8;
+    border:solid 2px;
+    border-radius: 28px;
+    border-color: rgba(13, 13, 13, .05);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    padding: 12px 16px;
+    align-items: stretch;
+    max-width: 776px;
+
+}
+
+/* 输入框占满剩余空间 */
+#chat-input {
+    width: 100%;
+    flex: 1;
+    border: none;
+    outline: none;
+    font-size: 16px;
+    background: transparent;
+    resize: none;
+    min-height: 30px;
+    max-height: 320px;
+    /* 最大高度 */
+    overflow-y: auto;
+    line-height: 1.6;
+    padding: 6px 0;
+    box-sizing: border-box;
+    transition: max-height 0.2s;
+}
+
+
+#send-btn {
+    margin-left: auto;
+        /* 推到最右 */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 34px;
+    width: 34px;
+    background: #19c37d;
+    color: #fff;
+    border: none;
+    border-radius: 20px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background 0.2s;
+    padding: auto;
+}
+
+#send-btn:hover {
+    background: #13a06b;
+}
+
+
+#send-down {
+    display: flex;
+    height: 30px;
+    width: 100%;
+    align-items: center;
+}
+
+
+#chat-input::-webkit-scrollbar {
+    width: 6px;
+    background: transparent;
+}
+
+#chat-input::-webkit-scrollbar-thumb {
+    background: #d1d5db;
+    border-radius: 6px;
+}
+
+#chat-input::-webkit-scrollbar-thumb:hover {
+    background: #b0b3b8;
+}
+
+
+
+.c-user{
+    margin-bottom: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    width: 100%;
+    line-height: 24px;
+}
+
+.c-system{
+    margin: 20px 10px 40px 10px;
+    display: flex;
+    flex-direction: column;
+    font-weight: bold;
+    background-color: rgba(233, 233, 233, .5);
+    border-radius: 18px;
+    padding: 12px 16px;
+}
+
+.c-system .content{
+    margin-top: 5px;
+    font-weight:lighter;
+    padding: 10px 15px;
+    border-radius: 20px;
+}
+
+.c-system .content:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.c-assistant {
+    margin-bottom: 20px;
+    display: flex;
+    flex-direction: column;
+    line-height: 28px;
+    width: 100%;
+}
+
+.c-user .content{
+    background-color: rgba(233, 233, 233, .5);
+    padding: 8px 12px;
+    border-radius: 18px;
+    max-width: 70%;
+    
+}
+
+.c-assistant .content{
+    padding-left: 5px;
+    margin-bottom: 10px;
+    width: 100%;
+}
+
+.c-assistant .assistant-more-info{
+    color: #adb2b8;
+    font-size: 14px;
+    padding-left: 5px;
+}
+
+
+.assistant-group{
+    display: flex;
+    user-select: none;
+}
+
+.user-group{
+    user-select: none;
+    margin-top: 5px;
+    display: flex;
+    opacity: 0;
+    transition: opacity 0.1s ease 0.1s;
+}
+
+.c-user:hover .user-group{
+    opacity: 1;
+    transition: opacity 0.1s ease 0.05s;
+}
+
+#tips {
+    position: absolute;
+    background: #333;
+    color: #fff;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    z-index: 1001;
+    font-weight: bold;
+}
+
+.user-edit,
+.try-again,
+.copy{
+    height: 30px;
+    width: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+}
+
+
+
+.tools-call-box {
+    width: 350px;
+    padding: 12px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    background: #fafafa;
+    font-family: "Microsoft YaHei", sans-serif;
+}
+
+/* 顶部标题 */
+.tools-call-box> :first-child {
+    font-weight: bold;
+    font-size: 16px;
+    margin-bottom: 10px;
+}
+
+/* 每一项（工具名 / id / 参数）整体占一行 */
+.tools-call-return,
+.tools-call-name,
+.tools-call-id,
+.tools-call-params {
+    margin-bottom: 8px;
+    font-size: 14px;
+}
+
+.tools-call-return {
+    display: none;
+}
+
+
+/* 内容部分单独换行显示 */
+.tools-call-return .tools-content,
+.tools-call-name .tools-content,
+.tools-call-id .tools-content,
+.tools-call-params .tools-content {
+    display: inline-block;
+    margin-left: 8px;
+    font-weight: normal;
+    color: #333;
+}
+
+/* 传入数据的 JSON 内容独占一行 */
+.tools-call-return .tools-content,
+.tools-call-params .tools-content {
+    display: block;
+    background: #f0f0f0;
+    border-radius: 4px;
+    padding: 4px 6px;
+    font-family: monospace;
+    white-space: pre-wrap;
+    margin-top: 4px;
+}
+
+.tools-call-id {
+    display: none;
+}
+
+/* 按钮区域 */
+.tools-call-actions {
+    display: none;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 12px;
+}
+
+.tools-call-actions button {
+    padding: 6px 14px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.btn-cancel {
+    background-color: #f44336;
+    /* 主体红色 */
+    color: white;
+    /* 字体白色更清晰 */
+}
+
+.btn-cancel:hover {
+    background-color: #e53935;
+    /* 悬停时略深一点 */
+}
+
+.btn-confirm {
+    background-color: #4caf50;
+    color: white;
+}
+
+.btn-confirm:hover {
+    background-color: #43a047;
+}
+
+
+
+#chat-tree{
+
+    display: flex;
+}
+.check-button{
+    height: 30px;
+    width: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+}
+#check-content{
+    font-weight: bold;
+    height: 30px;
+    margin: 0 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+}
+
+#edit-msg-box{
+    width: 450px;
+    height: 170px;
+    border-radius: 20px;
+    border: solid 2px rgba(13, 13, 13, .1);
+    display: flex;
+    flex-wrap: wrap;
+    flex-direction: column;
+}
+#edit-msg-box #edit-msg{
+    margin-top: 15px;
+    padding: 0 20px;
+    overflow-y: auto;
+    width: 100%;
+    flex: 1;
+    outline: none;
+    font-size: 16px;
+    background: transparent;
+    resize: none;
+    min-height: 30px;
+    max-height: 110px;
+    line-height: 1.2;
+    box-sizing: border-box;
+    transition: max-height 0.2s;
+    border: none;
+}
+#edit_msg-box #edit-msg::-webkit-scrollbar {
+    width: 6px;
+    background: transparent;
+}
+
+#edit_msg-box #edit-msg::-webkit-scrollbar-thumb {
+    background: #d1d5db;
+    border-radius: 6px;
+}
+
+#edit-msg-box #edit-msg::-webkit-scrollbar-thumb:hover {
+    background: #b0b3b8;
+}
+.edit-buttons{
+    margin-top: 3px;
+    display: flex;
+    justify-content: flex-end;
+    user-select: none;
+}
+.edit-cancel,
+.edit-send{
+    border: solid 1px rgba(13, 13, 13,0.1);
+    padding: 6px 8px;
+    border-radius: 30px;
+    margin-right: 20px;
+}
+.edit-send{
+    color: white;
+    background-color: #19c37d;
+}
+.edit-send:hover{
+    background-color: #13a06b;
+}
+.edit-cancel:hover{
+    background-color: #f2f2f2;
+}

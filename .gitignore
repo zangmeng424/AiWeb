@@ -1,0 +1,9 @@
+.idea/
+.venv/
+logs/
+bge-small-zh-v1.5/
+*.index
+*.pkl
+test.html
+test-*.py
+config_*.py

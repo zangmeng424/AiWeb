@@ -53,7 +53,9 @@
                 <!-- 文本输入框 -->
                 <div class="input-group">
                     <label for="chat_model">模型</label>
-                    <input id="chat_model" type="text" value="DeepSeek">
+                    <select id="chat_model" name="chat_model">
+
+                    </select>
                 </div>
     
                 <div class="slider-group">
@@ -483,8 +485,9 @@
                 .then(response => {
                     // 获取返回的 JSON 数据
                     console.log(response.data)
-                    if (response.data.code == 1) {
+                    if (response.data.code === 1) {
                         alert(response.data.msg)
+                        location.reload(true)
                     } else {
                         console.log(response.data.msg)
                         alert(response.data.msg)

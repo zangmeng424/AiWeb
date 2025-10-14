@@ -36,3 +36,17 @@ def del_task():
         rt_d["code"] = 0
 
     return jsonify(rt_d)
+
+
+@task_bp.route('/add', methods=['GET'])
+def add():
+    rt_d = {"code": 1}
+    session_id = request.args.get('session_id')
+    try:
+        add_dao(session_id)
+    except Exception:
+        logger.exception(f'AI对话添加失败')
+        rt_d["msg"] = "AI对话添加失败"
+        rt_d["code"] = 0
+    return rt_d
+

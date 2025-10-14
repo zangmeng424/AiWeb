@@ -19,23 +19,25 @@ def get_history_dao(session_id:str) -> json:
         "session_id":session_id,
         "max_take": max_take,
         "system": ststem,
-        "last_msg_id": last_msg_id[0]["chat_uuid"],
+        "last_msg_id":last_msg_id[0]["chat_uuid"] if last_msg_id else "",
         "data": {}
     }
 
     #查询主要数据
     sql = "SELECT chat_uuid,role,children,metadata FROM chat_history WHERE session_id = %s ORDER BY created_at ASC"
     history_data = db.query(sql, (session_id,))
-
-    for data_c in history_data:
-        if data_c["role"] == "tool":
-            rt_data["data"][data_c["chat_uuid"]]["tool_return"] = json.loads(data_c["metadata"])
-        else:
-            rt_data["data"][data_c["chat_uuid"]]={
-                **json.loads(data_c["metadata"]),
-                "role": data_c["role"],
-                "children": json.loads(data_c["children"] if data_c["children"] else [])
-            }
+    if history_data:
+        for data_c in history_data:
+            if data_c["role"] == "tool":
+                rt_data["data"][data_c["chat_uuid"]]["tool_return"] = json.loads(data_c["metadata"])
+            else:
+                rt_data["data"][data_c["chat_uuid"]]={
+                    **json.loads(data_c["metadata"]),
+                    "role": data_c["role"],
+                    "children": json.loads(data_c["children"] if data_c["children"] else [])
+                }
+    else:
+        rt_data["data"]={}
 
     return rt_data
 
@@ -47,7 +49,7 @@ def update_history_dao(msg_json:json) -> json:
     db.execute(sql, (msg_json["session_id"],msg_json["chat_uuid"],msg_json["role"],msg_json["metadata"]["content"],json.dumps([]),json.dumps(msg_json["metadata"]),msg_json["created_at"],))
 
     metadata = msg_json["metadata"]
-    if metadata["parent_id"]:
+    if "parent_id" in metadata and metadata["parent_id"]:
         #拿取更新消息的父消息的children初始消息
         sql = "SELECT children FROM chat_history WHERE chat_uuid = %s"
         result=db.query(sql,(metadata["parent_id"],))

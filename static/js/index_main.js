@@ -43,7 +43,7 @@ function ch_del(sessid) {
     }
 }
 
-function ch_edit(sessid) {
+async function ch_edit(sessid) {
     document.body.classList.add('mask')
 
     document.querySelector("#chat-history-list .chat-setting").remove()
@@ -55,30 +55,19 @@ function ch_edit(sessid) {
     setTimeout(() => {
         setbox.classList.add('active')
     }, 10)
-
-
-
-    axios.get('/api/setting/task', {
-            params: {
-                session_id: sessid,
-            }
-        })
+    let model_data=[]
+    await axios.get('/api/setting/model')
         .then(response => {
             // 获取返回的 JSON 数据
             console.log(response.data)
-            if (response.data.code == 1) {
-                // 遍历 data 数组
-                setbox.querySelector("#session_id").value = response.data.data.session_id
-                setbox.querySelector("#task_name").value = response.data.data.title
-                setbox.querySelector("#system").value = response.data.data.system
-                setbox.querySelector('#displayImage').src = response.data.data.avatar
-                setbox.querySelector("#chat_model").value = response.data.data.model
-                setbox.querySelector("#max_take").value = response.data.data.max_take
-                setbox.querySelector("#max_take_in").value = response.data.data.max_take
-                setbox.querySelector("#temperature").value = response.data.data.temperature
-                setbox.querySelector("#temperature_in").value = response.data.data.temperature
-                setbox.querySelector("#top_p").value = response.data.data.top_p
-                setbox.querySelector("#top_p_in").value = response.data.data.top_p
+            if (response.data.code === 1) {
+                model_data = response.data.data
+                const chat_model = document.getElementById('chat_model')
+                chat_model.innerHTML = ''
+                response.data.data.forEach(model_son =>{
+                    const opt = new Option(model_son.model_name, model_son.model_uuid)
+                    chat_model.add(opt)
+                })
             } else {
                 console.log(response.data.msg)
                 alert(response.data.msg)
@@ -88,6 +77,58 @@ function ch_edit(sessid) {
             // 如果有错误则输出到控制台
             console.error('请求出错:', error)
         })
+
+
+    await axios.get('/api/setting/task', {
+            params: {
+                session_id: sessid,
+            }
+        })
+        .then(response => {
+            // 获取返回的 JSON 数据
+            console.log(response.data)
+            if (response.data.code == 1) {
+                setbox.querySelector("#session_id").value = response.data.data.session_id
+                setbox.querySelector("#task_name").value = response.data.data.title
+                setbox.querySelector("#system").value = response.data.data.system
+                setbox.querySelector('#displayImage').src = response.data.data.avatar
+                setbox.querySelector("#max_take").value = response.data.data.max_take
+                setbox.querySelector("#max_take_in").value = response.data.data.max_take
+                setbox.querySelector("#temperature").value = response.data.data.temperature
+                setbox.querySelector("#temperature_in").value = response.data.data.temperature
+                setbox.querySelector("#top_p").value = response.data.data.top_p
+                setbox.querySelector("#top_p_in").value = response.data.data.top_p
+
+                response.data.data.model
+
+            } else {
+                console.log(response.data.msg)
+                alert(response.data.msg)
+            }
+        })
+        .catch(error => {
+            // 如果有错误则输出到控制台
+            console.error('请求出错:', error)
+        })
+
+    // 监听每次选择变化
+    const chat_model = document.getElementById('chat_model')
+    chat_model.addEventListener('change', function (e) {
+        console.log('选择已更改，当前值：', e.target.value)
+        model_data.forEach(model_son =>{
+            if (model_son.model_uuid === e.target.value){
+                setbox.querySelector("#system").value = model_son.system
+                setbox.querySelector("#max_take").value = model_son.max_take
+                setbox.querySelector("#max_take_in").value = model_son.max_take
+                setbox.querySelector("#temperature").value = model_son.temperature
+                setbox.querySelector("#temperature_in").value = model_sona.temperature
+                setbox.querySelector("#top_p").value = model_son.top_p
+                setbox.querySelector("#top_p_in").value = model_son.top_p
+            }
+        })
+        
+        // 在此处添加需要的处理逻辑，例如更新界面或发送请求
+    });
 }
 
 function ch_put(sessid) {
@@ -534,7 +575,10 @@ async function update_msg(element){
             "children":[],
             ...msg["metadata"]
         }
-        msg_list[element.previousElementSibling.dataset.id]["children"].unshift(msg["chat_uuid"])
+
+        if(element.previousElementSibling.className !== "c-system"){
+            msg_list[element.previousElementSibling.dataset.id]["children"].unshift(msg["chat_uuid"])
+        }
     }
 
     return axios.post('/api/chat/history', msg)
@@ -669,16 +713,43 @@ function update_task_list(){
         })
 }
 
+
+async function add_new_task(){
+    const session_id = generateUUID()
+    history.pushState(null, '', `/chat/${session_id}`)
+
+    return axios.get('/api/task/add',{
+            params: {
+                session_id:window.location.pathname.split('/').filter(Boolean).pop()
+            }
+        })
+        .then(response => {
+            if (response.data.code === 1){
+                console.log(response.data.msg)
+                localStorage.setItem('lastsessid', session_id)
+            }
+            else{
+                console.log(response.data.msg)
+            }
+
+        })
+        .catch(error => {
+                    // 如果有错误则输出到控制台
+                    console.error('请求出错:', error)
+                })
+
+}
+
 //页面初始化
 !(function () {
     //初始组建绑定
-    document.querySelector("#new_chat").addEventListener("click",function (e) {
+    document.querySelector("#new_chat").addEventListener("click",async function (e) {
         e.preventDefault()
-        history.pushState(null, '', `/chat/new`)
-        const chat_main = document.querySelector("#chat-in")
-        chat_main.innerText = ""
-        chat_main.appendChild(document.querySelector("#source .c-system").cloneNode(true))
-        chat_main.querySelector(".c-system .content").innerText = "You are a helpful assistant"
+
+        await add_new_task()
+
+        location.reload(true)
+
     })
 
     update_task_list()
@@ -731,13 +802,6 @@ sendBtn.onclick = () => {
             top: document.querySelector("#chat-area").scrollHeight,
             behavior: 'smooth'
         })
-
-
-        if (window.location.pathname.split('/').filter(Boolean).pop() === "new"){
-            history.pushState(null, '', `/chat/${generateUUID()}`)
-            
-        }
-
 
         update_msg(userDiv)
 

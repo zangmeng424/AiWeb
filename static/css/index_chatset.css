@@ -132,6 +132,15 @@ body.mask::before {
     resize: none;
     line-height: 1.6;
 }
+.input-group #chat_model {
+    width: 200px;
+    font-size: 16px;
+    border: none;
+    outline: none;
+    background: transparent;
+    resize: none;
+    line-height: 1.6;
+}
 .input-group textarea {
     min-height: 120px;
     max-height: 300px;

@@ -29,11 +29,11 @@ def change_system():
 
 @setting_bp.route('/task', methods=['POST','GET'])
 def task_setting():
+    rt_d = {
+        "code": 1,
+    }
     if request.method == 'GET':
         session_id = request.args.get('session_id')
-        rt_d = {
-            "code": 1,
-        }
         try:
             rt_d["data"] = get_task_setting_dao(session_id)
         except Exception:
@@ -44,9 +44,6 @@ def task_setting():
         return jsonify(rt_d)
     elif request.method == 'POST':
         data = request.get_json()
-        rt_d = {
-            "code": 1,
-        }
         try:
             change_task_setting_dao(data)
             rt_d["msg"] = "保存成功"
@@ -57,20 +54,46 @@ def task_setting():
 
         return jsonify(rt_d)
 
-@setting_bp.route('/model', methods=['GET'])
+@setting_bp.route('/model', methods=['GET','POST'])
 def model():
     rt_d = {
         "code": 1,
     }
+    if request.method == 'GET':
+        try:
+            data=get_model_dao()
+            rt_d["data"] = data
+        except Exception:
+            logger.exception(f'模型数据获取失败')
+            rt_d["msg"] = "模型数据获取失败，请重新进入页面"
+            rt_d["code"] = 0
+
+        return jsonify(rt_d)
+    elif request.method == 'POST':
+        data = request.get_json()
+        try:
+            change_model_dao(data)
+            rt_d["msg"] = "修改模型数据成功"
+        except Exception:
+            logger.exception(f'修改模型数据失败')
+            rt_d["msg"] = "修改模型数据失败"
+            rt_d["code"] = 0
+
+        return jsonify(rt_d)
+
+
+@setting_bp.route('/model/del', methods=['GET'])
+def del_model():
+    rt_d = {
+        "code": 1,
+    }
     try:
-        data=model_dao()
-        rt_d["data"] = data
+        model_uuid = request.args.get('model_uuid')
+        del_model_dao(model_uuid)
+        rt_d["msg"] = "模型删除成功"
     except Exception:
-        logger.exception(f'模型数据获取失败')
-        rt_d["msg"] = "模型数据获取失败，请重新进入页面"
+        logger.exception(f'模型删除失败')
+        rt_d["msg"] = "模型删除失败"
         rt_d["code"] = 0
-        
+
     return jsonify(rt_d)
-
-
-

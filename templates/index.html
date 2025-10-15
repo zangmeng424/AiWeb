@@ -15,14 +15,10 @@
             color: #333;
         }
     </style>
-    <link rel="stylesheet" href="index_chatset.css">
-    <link rel="stylesheet" href="index_sidebar.css">
-    <link rel="stylesheet" href="index_main.css">
     
     <link rel="stylesheet" href="/static/css/index_chatset.css">
     <link rel="stylesheet" href="/static/css/index_sidebar.css">
     <link rel="stylesheet" href="/static/css/index_main.css">
-    <script src="axios.min.js"></script>
     <script src="/static/js/axios.min.js"></script>
 </head>
 
@@ -32,15 +28,15 @@
         <h2>对话设置</h2>
         <div id="chatset">
             <div style="width: 400px;">
-                <input type="text" id="session_id" style="display:none;">
+                <input type="text" id="session-id" style="display:none;">
                 <div id="imageDiv">
                     <img id="displayImage" src="" alt="">
                 </div>
                 <input type="file" id="fileInput" name="image" style="display:none;" accept="image/*">
                 <!-- 文本输入框 -->
                 <div class="input-group">
-                    <label for="task_name">名称</label>
-                    <input id="task_name" type="text">
+                    <label for="task-name">名称</label>
+                    <input id="task-name" type="text">
                 </div>
                 <!-- 多行输入框 -->
                 <div class="input-group">
@@ -52,8 +48,8 @@
                 style="width: 300px; padding-left: 10px; display: flex; flex-direction: column;  align-items: center; padding-top: 50px;">
                 <!-- 文本输入框 -->
                 <div class="input-group">
-                    <label for="chat_model">模型</label>
-                    <select id="chat_model" name="chat_model">
+                    <label for="chat-model">模型</label>
+                    <select id="chat-model" name="chat-model">
 
                     </select>
                 </div>
@@ -61,8 +57,8 @@
                 <div class="slider-group">
                     <div class="slider-title">上下文消息数量上限</div>
                     <div class="slider-box">
-                        <input type="range" id="max_take" min="0" max="20" value="20" step="2" list="max_take_tick">
-                        <datalist id="max_take_tick">
+                        <input type="range" id="max-take" min="0" max="20" value="20" step="2" list="max-take-tick">
+                        <datalist id="max-take-tick">
                             <option value="0"></option>
                             <option value="2"></option>
                             <option value="4"></option>
@@ -75,29 +71,29 @@
                             <option value="18"></option>
                             <option value="20"></option>
                         </datalist>
-                        <input type="number" id="max_take_in" min="0" max="20" value="20" step="2">
+                        <input type="number" id="max-take-in" min="0" max="20" value="20" step="2">
                     </div>
                 </div>
     
                 <div class="slider-group">
                     <div class="slider-title">严谨与想象(Temperature)</div>
                     <div class="slider-box">
-                        <input type="range" id="temperature" min="0" max="2" value="2" step="0.01" list="temperature_tick">
-                        <datalist id="temperature_tick">
+                        <input type="range" id="temperature" min="0" max="2" value="2" step="0.01" list="temperature-tick">
+                        <datalist id="temperature-tick">
                             <option value="0.0" label="代码生成"></option>
                             <option value="1.0"></option>
                             <option value="1.3"></option>
                             <option value="1.5"></option>
                         </datalist>
-                        <input type="number" id="temperature_in" min="0" max="2" value="2" step="0.01">
+                        <input type="number" id="temperature-in" min="0" max="2" value="2" step="0.01">
                     </div>
                 </div>
 
                 <div class="slider-group">
                     <div class="slider-title">Top P</div>
                     <div class="slider-box">
-                        <input type="range" id="top_p" min="0" max="1" value="1" step="0.01">
-                        <input type="number" id="top_p_in" min="0" max="1" value="1" step="0.01">
+                        <input type="range" id="top-p" min="0" max="1" value="1" step="0.01">
+                        <input type="number" id="top-p-in" min="0" max="1" value="1" step="0.01">
                     </div>
                 </div>
             </div>
@@ -108,6 +104,91 @@
         </div>
     </div>
 
+    <div class="model-setting-box" style="display: none;">
+        <h2>模型设置
+            <div style="padding-left: 200px;font-size: large; display: none" id="model-uuid"></div>
+        </h2>
+        <div id="chatset">
+            <div style="width: 400px;">
+                <div class="input-group">
+                    <label for="model">模型</label>
+                    <input id="model" type="text">
+                </div>
+                <div class="input-group">
+                    <label for="base-url">模型地址</label>
+                    <input id="base-url" type="text">
+                </div>
+                <div class="input-group">
+                    <label for="api-key">apikey</label>
+                    <input id="api-key" type="text">
+                </div>
+                <div class="input-group">
+                    <label for="chat-input">系统提示</label>
+                    <textarea id="system" maxlength="300"></textarea>
+                </div>
+            </div>
+            <div style="width: 300px; padding-left: 10px; display: flex; flex-direction: column;  align-items: center; ">
+                <div class="input-group" style="width: 200px;">
+                    <label for="model-name">模型名称</label>
+                    <input id="model-name" name="model-name" list="model-name-list">
+                    <datalist id="model-name-list">
+                        <option value="0"></option>
+                        <option value="2"></option>
+                    </datalist>
+            
+                </div>
+                <div class="slider-group">
+                    <div class="slider-title">上下文消息数量上限</div>
+                    <div class="slider-box">
+                        <input type="range" id="max-take" min="0" max="20" value="20" step="2" list="max-take-tick">
+                        <datalist id="max-take-tick">
+                            <option value="0"></option>
+                            <option value="2"></option>
+                            <option value="4"></option>
+                            <option value="6"></option>
+                            <option value="8"></option>
+                            <option value="10"></option>
+                            <option value="12"></option>
+                            <option value="14"></option>
+                            <option value="16"></option>
+                            <option value="18"></option>
+                            <option value="20"></option>
+                        </datalist>
+                        <input type="number" id="max-take-in" min="0" max="20" value="20" step="2">
+                    </div>
+                </div>
+            
+                <div class="slider-group">
+                    <div class="slider-title">严谨与想象(Temperature)</div>
+                    <div class="slider-box">
+                        <input type="range" id="temperature" min="0" max="2" value="2" step="0.01" list="temperature-tick">
+                        <datalist id="temperature-tick">
+                            <option value="0.0" label="代码生成"></option>
+                            <option value="1.0"></option>
+                            <option value="1.3"></option>
+                            <option value="1.5"></option>
+                        </datalist>
+                        <input type="number" id="temperature-in" min="0" max="2" value="2" step="0.01">
+                    </div>
+                </div>
+            
+                <div class="slider-group">
+                    <div class="slider-title">Top P</div>
+                    <div class="slider-box">
+                        <input type="range" id="top-p" min="0" max="1" value="1" step="0.01">
+                        <input type="number" id="top-p-in" min="0" max="1" value="1" step="0.01">
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div style=" position: absolute;bottom: 20px;right: 40px;display: flex;">
+            <button id="setbox-cancel">取消</button>
+            <button id="setbox-del">删除</button>
+            <button id="setbox-save">保存</button>
+        </div>
+    </div>
+
+
     <!-- 左侧侧栏 -->
     <div id="sidebar">
         <header>
@@ -115,7 +196,7 @@
         </header>
 
         <div class="sidebar-component-library">
-            <a id="new_chat" class="sidebar-btn-hover sidebar-entry" href="/chat/new">
+            <a id="new-chat" class="sidebar-btn-hover sidebar-entry" href="/chat/new">
                 <div class="sidebar-entry-svg">
                     <svg width="20" height="20" viewBox="0 0 48 48" fill="none"
                         xmlns="http://www.w3.org/2000/svg">
@@ -146,7 +227,25 @@
                 <div class="sidebar-entry-txt">插件库</div>
             </a>
 
-
+            <a id="model-setting" class="sidebar-btn-hover sidebar-entry" href="/model">
+                <div class="sidebar-entry-svg">
+                    <svg width="20" height="20" viewBox="0 0 48 48" fill="none"
+                        xmlns="http://www.w3.org/2000/svg">
+                        <rect x="9" y="18" width="30" height="24" rx="2" fill="none" stroke="#000000" stroke-width="3" />
+                        <circle cx="17" cy="26" r="2" fill="#000000" />
+                        <circle cx="31" cy="26" r="2" fill="#000000" />
+                        <path
+                            d="M20 32C18.8954 32 18 32.8954 18 34C18 35.1046 18.8954 36 20 36V32ZM28 36C29.1046 36 30 35.1046 30 34C30 32.8954 29.1046 32 28 32V36ZM20 36H28V32H20V36Z"
+                            fill="#000000" />
+                        <path d="M24 10V18" stroke="#000000" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+                        <path d="M4 26V34" stroke="#000000" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+                        <path d="M44 26V34" stroke="#000000" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+                        <circle cx="24" cy="8" r="2" stroke="#000000" stroke-width="3" />
+                    </svg>
+                </div>
+                <div style="padding-left: 8px;"></div>
+                <div class="sidebar-entry-txt">模型</div>
+            </a>
         </div>
         
         <div class="sidebar-component-library" id="chat-history-list">
@@ -179,7 +278,7 @@
 
             </div>
             <div style="display: none;">
-                <input id="max_take_now">
+                <input id="max-take-now">
             </div>
         </div>
         <div id="input-box">
@@ -447,8 +546,8 @@
 
         // 通用绑定函数
         function bindSlider(sliderId, inputId) {
-            const slider = document.getElementById(sliderId)
-            const input = document.getElementById(inputId)
+            const slider = document.querySelector(sliderId)
+            const input = document.querySelector(inputId)
 
             // 滑条变化 → 输入框
             slider.addEventListener("input", () => {
@@ -465,22 +564,26 @@
             })
         }
 
-        // 绑定两个滑条
-        bindSlider("max_take", "max_take_in")
-        bindSlider("temperature", "temperature_in")
-        bindSlider("top_p", "top_p_in")
+        // 绑定滑条
+        bindSlider(".setting-box #max-take", ".setting-box #max-take-in")
+        bindSlider(".setting-box #temperature", ".setting-box #temperature-in")
+        bindSlider(".setting-box #top-p", ".setting-box #top-p-in")
+
+        bindSlider(".model-setting-box #max-take", ".model-setting-box #max-take-in")
+        bindSlider(".model-setting-box #temperature", ".model-setting-box #temperature-in")
+        bindSlider(".model-setting-box #top-p", ".model-setting-box #top-p-in")
 
         function chatset_save() {
             const setbox = document.querySelector('.setting-box')
             axios.post('/api/setting/task', {
-                session_id: setbox.querySelector("#session_id").value,
-                task_name: setbox.querySelector("#task_name").value,
+                session_id: setbox.querySelector("#session-id").value,
+                task_name: setbox.querySelector("#task-name").value,
                 system: setbox.querySelector("#system").value,
                 avatar: setbox.querySelector('#displayImage').src,
-                model: setbox.querySelector("#chat_model").value,
-                max_take: setbox.querySelector("#max_take_in").value,
-                temperature: setbox.querySelector("#temperature_in").value,
-                top_p: setbox.querySelector("#top_p_in").value
+                model: setbox.querySelector("#chat-model").value,
+                max_take: setbox.querySelector("#max-take-in").value,
+                temperature: setbox.querySelector("#temperature-in").value,
+                top_p: setbox.querySelector("#top-p-in").value
                 })
                 .then(response => {
                     // 获取返回的 JSON 数据
@@ -515,10 +618,90 @@
                 document.body.classList.remove('mask')
             }, 150)
         }
-    
+
+        function model_setting_cancel() {
+            const setbox = document.querySelector('.model-setting-box')
+            setbox.classList.add('fade-out')
+            setTimeout(() => {
+                setbox.classList.remove('fade-out')
+                setbox.style.display = "none"
+                document.body.classList.remove('mask')
+            }, 150)
+        }
+
+        function model_setting_save() {
+            const setbox = document.querySelector('.model-setting-box')
+            setbox.querySelector("#model-name").value
+            if(! setbox.querySelector("#model-uuid").innerText){
+                setbox.querySelector("#model-uuid").innerText = ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c => (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16))
+            }
+
+            axios.post('/api/setting/model',{
+                model_uuid: setbox.querySelector("#model-uuid").innerText,
+                model_name: setbox.querySelector("#model-name").value,
+                model: setbox.querySelector("#model").value,
+                system: setbox.querySelector("#system").value,
+                max_take: setbox.querySelector("#max-take").value,
+                temperature: setbox.querySelector("#temperature").value,
+                top_p: setbox.querySelector("#top-p").value,
+                base_url: setbox.querySelector("#base-url").value,
+                api_key: setbox.querySelector("#api-key").value
+            })
+                .then(response => {
+                    // 获取返回的 JSON 数据
+                    console.log(response.data)
+                    if (response.data.code === 1) {
+                        console.log(response.data.msg)
+                        alert(response.data.msg)
+                    } else {
+                        console.log(response.data.msg)
+                        alert(response.data.msg)
+                    }
+                })
+                .catch(error => {
+                    // 如果有错误则输出到控制台
+                    console.error('请求出错:', error)
+                })
+            model_setting_cancel()
+        }
+
+
+        function model_setting_del() {
+            const setbox = document.querySelector('.model-setting-box')
+            if (setbox.querySelector("#model-uuid").innerText){
+                axios.get("/api/setting/model/del",{
+                    params: {
+                        model_uuid: setbox.querySelector("#model-uuid").innerText
+                    }
+                })
+                .then(response => {
+                    if (response.data.code === 1) {
+                        console.log(response.data)
+                        alert(response.data.msg)
+                    }
+                    else{
+                        console.log(response.data.msg)
+                        alert(response.data.msg)
+                    }
+                })
+                .catch(error => {
+                    // 如果有错误则输出到控制台
+                    console.error('请求出错:', error)
+                })
+                model_setting_cancel()
+            }
+            else{
+                alert("请选择模型")
+            }
+
+        }
+
         document.querySelector('.setting-box #setbox-cancel').addEventListener("click", chatset_cancel)
         document.querySelector('.setting-box #setbox-save').addEventListener("click", chatset_save)
-        
+        document.querySelector('.model-setting-box #setbox-del').addEventListener("click", model_setting_del)
+        document.querySelector('.model-setting-box #setbox-save').addEventListener("click", model_setting_save)
+        document.querySelector('.model-setting-box #setbox-cancel').addEventListener("click", model_setting_cancel)
+
     
     </script>
 

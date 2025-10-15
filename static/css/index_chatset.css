@@ -28,6 +28,7 @@
     width: 180px;
     height: 6px;
 }
+.model-setting-box,
 .setting-box {
     opacity: 0;
     position: fixed;
@@ -62,11 +63,13 @@ body::before {
 body.mask::before {
     z-index: 1002;
 }
-
+.model-setting-box h2,
 .setting-box h2 {
+    display: flex;
     margin-top: 0;
     padding-bottom: 4px;
 }
+.model-setting-box button,
 .setting-box button {
     margin-left: 20px;
     float: right;
@@ -77,6 +80,8 @@ body.mask::before {
     padding: 6px 8px;
     font-size: 18px;
 }
+
+.model-setting-box button:hover,
 .setting-box button:hover {
     background: #13a06b;
 }
@@ -132,7 +137,7 @@ body.mask::before {
     resize: none;
     line-height: 1.6;
 }
-.input-group #chat_model {
+.input-group #chat-model {
     width: 200px;
     font-size: 16px;
     border: none;
@@ -157,4 +162,12 @@ body.mask::before {
 }
 .input-group textarea::-webkit-scrollbar-thumb:hover {
     background: #b0b3b8;
+}
+
+#setbox-del{
+    color: white;
+    background-color: rgba(255, 0, 0, 0.7);
+}
+#setbox-del:hover{
+    background-color: rgba(151, 0, 0, 0.7);
 }

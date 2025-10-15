@@ -62,7 +62,7 @@ async function ch_edit(sessid) {
             console.log(response.data)
             if (response.data.code === 1) {
                 model_data = response.data.data
-                const chat_model = document.getElementById('chat_model')
+                const chat_model = document.getElementById('chat-model')
                 chat_model.innerHTML = ''
                 response.data.data.forEach(model_son =>{
                     const opt = new Option(model_son.model_name, model_son.model_uuid)
@@ -87,17 +87,17 @@ async function ch_edit(sessid) {
         .then(response => {
             // 获取返回的 JSON 数据
             console.log(response.data)
-            if (response.data.code == 1) {
-                setbox.querySelector("#session_id").value = response.data.data.session_id
-                setbox.querySelector("#task_name").value = response.data.data.title
+            if (response.data.code === 1) {
+                setbox.querySelector("#session-id").value = response.data.data.session_id
+                setbox.querySelector("#task-name").value = response.data.data.title
                 setbox.querySelector("#system").value = response.data.data.system
                 setbox.querySelector('#displayImage').src = response.data.data.avatar
-                setbox.querySelector("#max_take").value = response.data.data.max_take
-                setbox.querySelector("#max_take_in").value = response.data.data.max_take
+                setbox.querySelector("#max-take").value = response.data.data.max_take
+                setbox.querySelector("#max-take-in").value = response.data.data.max_take
                 setbox.querySelector("#temperature").value = response.data.data.temperature
-                setbox.querySelector("#temperature_in").value = response.data.data.temperature
-                setbox.querySelector("#top_p").value = response.data.data.top_p
-                setbox.querySelector("#top_p_in").value = response.data.data.top_p
+                setbox.querySelector("#temperature-in").value = response.data.data.temperature
+                setbox.querySelector("#top-p").value = response.data.data.top_p
+                setbox.querySelector("#top-p-in").value = response.data.data.top_p
 
                 response.data.data.model
 
@@ -112,7 +112,7 @@ async function ch_edit(sessid) {
         })
 
     // 监听每次选择变化
-    const chat_model = document.getElementById('chat_model')
+    const chat_model = document.getElementById('chat-model')
     chat_model.addEventListener('change', function (e) {
         console.log('选择已更改，当前值：', e.target.value)
         model_data.forEach(model_son =>{
@@ -126,9 +126,8 @@ async function ch_edit(sessid) {
                 setbox.querySelector("#top_p_in").value = model_son.top_p
             }
         })
-        
-        // 在此处添加需要的处理逻辑，例如更新界面或发送请求
-    });
+
+    })
 }
 
 function ch_put(sessid) {
@@ -158,7 +157,7 @@ function listen_system(){
                 .then(response => {
                     // 获取返回的 JSON 数据
                     console.log(response.data)
-                    if (response.data.code == 1) {
+                    if (response.data.code === 1) {
                         console.log(response.data.msg)
                     } else {
                         console.log(response.data.msg)
@@ -188,7 +187,7 @@ function load_history(sessid){
             }
         })
         .then(response => {
-            if (response.data.code == 1) {
+            if (response.data.code === 1) {
 
                 function load_msg(find_uuid){
 
@@ -250,7 +249,7 @@ function load_history(sessid){
                             chat_tree.querySelector("#check-content").innerText = `${position}/${total}`
 
                             console.log(`拥有值${find_uuid}，共${total}位，处于第${position}位，上一个值${prev}，下一个值${next}`)
-                            if(chat_main.firstElementChild.className == "c-user"){
+                            if(chat_main.firstElementChild.className === "c-user"){
                                 chat_main.firstElementChild.lastElementChild.appendChild(chat_tree)
                             }else{
                                 chat_main.firstElementChild.lastElementChild.prepend(chat_tree)
@@ -263,7 +262,7 @@ function load_history(sessid){
 
                 console.log(response.data)
 
-                document.querySelector("#max_take_now").value = response.data.max_take
+                document.querySelector("#max-take-now").value = response.data.max_take
                 msg_list = response.data.data
                 //添加对话
                 const chat_main = document.querySelector("#chat-in")
@@ -333,7 +332,7 @@ function copyText(text) {
 function generateUUID() {
     return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
         (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
-    );
+    )
 }
 
 //页面消息发送与新消息加载
@@ -360,7 +359,7 @@ async function send_msg() {
     const path = window.location.pathname
     const session_id = path.split('/').filter(Boolean).pop()
     //加载历史对话
-    const max_take = Number(document.querySelector("#chat-area #max_take_now").value)
+    const max_take = Number(document.querySelector("#chat-area #max-take-now").value)
     const task_data = []
 
     // 获取所有消息节点
@@ -371,7 +370,7 @@ async function send_msg() {
         if (index >= 0) {
             task_data.unshift(
                 {
-                    "role": allmsgbox[index].parentNode.className == "c-user" ? "user" : "assistant",
+                    "role": allmsgbox[index].parentNode.className === "c-user" ? "user" : "assistant",
                     "content": allmsgbox[index].innerText
                 }
             )
@@ -408,7 +407,6 @@ async function send_msg() {
     assistantDiv.querySelector(".assistant-group").style.display = "none"
     const chat_area = document.querySelector("#chat-area")
 
-    const tool_call_box = NaN
     return fetchEventSource("/api/chat", {
         method: "POST",
         headers: {"Content-Type": "application/json"},
@@ -444,7 +442,7 @@ async function send_msg() {
                             .then(response => {
                                 // 获取返回的 JSON 数据
                                 console.log(response.data)
-                                if (response.data.code == 1) {
+                                if (response.data.code === 1) {
                                     //获取到工具响应结果
                                     tools_box.querySelector(".tools-call-return .tools-content").innerText = response.data.data
                                     tools_box.querySelector(".tools-call-return").style.display = "block"
@@ -471,7 +469,7 @@ async function send_msg() {
                 const data = JSON.parse(ev.data)
                 if (data.choices?.[0]?.delta?.content) {
                     assistantDiv.querySelector(".content").innerText += data.choices[0].delta.content
-                    if (data.choices[0].finish_reason == "stop") {
+                    if (data.choices[0].finish_reason === "stop") {
                         assistantDiv.querySelector(".assistant-more-info").innerText = `used tokens: ${data.usage.total_tokens},model: ${data.model}`
                     }
                 }
@@ -585,7 +583,7 @@ async function update_msg(element){
         .then(response => {
             // 获取返回的 JSON 数据
             console.log(response.data)
-            if (response.data.code == 1) {
+            if (response.data.code === 1) {
                 console.log(response.data.msg)
             } else {
                 console.log(response.data.msg)
@@ -684,14 +682,14 @@ function update_task_list(){
                                 return
                             }
                             let session_id = ""
-                            if(e.target.className == "sidebar-entry-txt"){
+                            if(e.target.className === "sidebar-entry-txt"){
                                     session_id = e.target.parentNode.dataset.id
                                 }
                             else{
                                     session_id = e.target.dataset.id
                                 }
                             const old_session_id = window.location.pathname.split('/').filter(Boolean).pop()
-                            if (old_session_id != session_id){//防止重复加载
+                            if (old_session_id !== session_id){//防止重复加载
                                 // 更新地址栏地址
                                 history.pushState(null, '', `/chat/${session_id}`)
                                 load_history(session_id)
@@ -743,13 +741,71 @@ async function add_new_task(){
 //页面初始化
 !(function () {
     //初始组建绑定
-    document.querySelector("#new_chat").addEventListener("click",async function (e) {
+    document.querySelector("#new-chat").addEventListener("click",async function (e) {
         e.preventDefault()
 
         await add_new_task()
 
         location.reload(true)
 
+    })
+
+    document.querySelector("#model-setting").addEventListener("click",async function (e){
+        e.preventDefault()
+        document.body.classList.add('mask')
+        const setbox = document.querySelector('.model-setting-box')
+        setbox.querySelector("#model-name").value = ""
+        setbox.style.display = "block"
+        setTimeout(() => {
+            setbox.classList.add('active')
+        }, 10)
+        let model_data=[]
+        await axios.get('/api/setting/model')
+        .then(response => {
+            // 获取返回的 JSON 数据
+            console.log(response.data)
+            if (response.data.code === 1) {
+                model_data = response.data.data
+                const chat_model = document.getElementById('model-name-list')
+                chat_model.innerHTML = ''
+                response.data.data.forEach(model_son =>{
+                    const opt = document.createElement('option')
+                    opt.value = model_son.model_name
+                    chat_model.appendChild(opt)
+                })
+            } else {
+                console.log(response.data.msg)
+                alert(response.data.msg)
+            }
+        })
+        .catch(error => {
+            // 如果有错误则输出到控制台
+            console.error('请求出错:', error)
+        })
+
+        // 监听每次选择变化
+        const model_name = document.getElementById('model-name')
+        await model_name.addEventListener('change', function (e) {
+            console.log('选择已更改，当前值：', e.target.value)
+            model_data.forEach(model_son =>{
+                if (e.target.value === model_son.model_name){
+                    setbox.querySelector("#model-uuid").innerText = model_son.model_uuid
+                    setbox.querySelector("#model").value = model_son.model
+                    setbox.querySelector("#system").value = model_son.system
+                    setbox.querySelector("#max-take").value = model_son.max_take
+                    setbox.querySelector("#max-take-in").value = model_son.max_take
+                    setbox.querySelector("#temperature").value = model_son.temperature
+                    setbox.querySelector("#temperature-in").value = model_son.temperature
+                    setbox.querySelector("#top-p").value = model_son.top_p
+                    setbox.querySelector("#top-p-in").value = model_son.top_p
+                    setbox.querySelector("#base-url").value = model_son.base_url
+                    setbox.querySelector("#api-key").value = model_son.api_key
+                }else{
+                    setbox.querySelector("#model-uuid").innerText = ""
+                }
+
+            })
+        })
     })
 
     update_task_list()
@@ -866,7 +922,7 @@ chatIn.addEventListener('click', async function (e) {
             const check_button = e.target.closest('.check-button')
             let check_id = check_button.dataset.id
             let chat_box = check_button.closest('.c-user, .c-assistant')
-            if (check_id != "null") {
+            if (check_id !== "null") {
                 let next = chat_box.nextElementSibling
                 while (next) {
                     let tmp = next.nextElementSibling // 先保存下一个

@@ -1,5 +1,7 @@
 import base64
 import json
+import time
+
 from flask import current_app
 
 
@@ -47,10 +49,63 @@ def change_task_setting_dao(data:json) -> bool:
 
 
 
-def model_dao() -> list:
+def get_model_dao() -> list:
     db = current_app.db
 
-    sql = "SELECT model_uuid,system,model_name,base_url,api_key,max_take,temperature,top_p FROM model_menu"
+    sql = "SELECT model_uuid,system,model_name,model,base_url,api_key,max_take,temperature,top_p FROM model_menu"
     data=db.query(sql)
 
     return data
+
+
+
+def change_model_dao(data:json) -> bool:
+    db = current_app.db
+
+    sql = """
+    INSERT INTO model_menu
+    (model_uuid, model_name, model, system, max_take, temperature, top_p, base_url, api_key,create_at)
+    VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+    ON DUPLICATE KEY UPDATE
+        model_name = VALUES(model_name),
+        model = VALUES(model),
+        system = VALUES(system),
+        max_take = VALUES(max_take),
+        temperature = VALUES(temperature),
+        top_p = VALUES(top_p),
+        base_url = VALUES(base_url),
+        api_key = VALUES(api_key);
+    """
+    db.execute(sql, (
+        data['model_uuid'],
+        data['model_name'],
+        data['model'],
+        data['system'],
+        data['max_take'],
+        data['temperature'],
+        data['top_p'],
+        data['base_url'],
+        data['api_key'],
+        int(time.time())
+    ))
+    return True
+
+
+def del_model_dao(model_uuid:str) -> bool:
+    db = current_app.db
+
+    sql = "DELETE FROM model_menu WHERE model_uuid=%s"
+    db.execute(sql, (model_uuid,))
+
+    return True
+
+
+
+
+
+
+
+
+
+
+

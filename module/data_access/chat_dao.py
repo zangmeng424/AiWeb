@@ -1,4 +1,6 @@
 import json
+import time
+
 from flask import current_app
 
 
@@ -38,6 +40,11 @@ def get_history_dao(session_id:str) -> json:
                 }
     else:
         rt_data["data"]={}
+
+    # 更新最后使用时间
+    sql = "UPDATE chat_menu SET lastuse_at=%s WHERE session_id=%s"
+    db.execute(sql, (int(time.time()),session_id,))
+
 
     return rt_data
 

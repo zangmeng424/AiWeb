@@ -390,12 +390,12 @@
     transition: max-height 0.2s;
     border: none;
 }
-#edit_msg-box #edit-msg::-webkit-scrollbar {
+#edit-msg-box #edit-msg::-webkit-scrollbar {
     width: 6px;
     background: transparent;
 }
 
-#edit_msg-box #edit-msg::-webkit-scrollbar-thumb {
+#edit-msg-box #edit-msg::-webkit-scrollbar-thumb {
     background: #d1d5db;
     border-radius: 6px;
 }

@@ -648,7 +648,6 @@ function update_task_list(){
                         if (e.target.className === "chat-setting sidebar-entry-svg"){
                             const chatSetting = e.target
                             if (chatSetting) {
-                                console.log(e)
                                 if (this.querySelector('.csp')){
                                     this.querySelector('.csp').remove()
                                     return
@@ -747,6 +746,39 @@ async function add_new_task(){
         await add_new_task()
 
         location.reload(true)
+
+    })
+
+    document.querySelector("#knowledge-setting").addEventListener("click",async function (e) {
+        e.preventDefault()
+
+        document.body.classList.add('mask')
+        const setbox = document.querySelector('.knowledge-setting-box')
+        const setbox_main = setbox.querySelector("#chatset")
+        setbox_main.innerHTML = `<div class="knowledge—list"> <div class="knowledge—list-content" contenteditable="true"> </div><button id="setbox-save">保存</button></div>`
+
+        setbox.style.display = "block"
+        setTimeout(() => {
+            setbox.classList.add('active')
+        }, 10)
+
+        await axios.get('/api/knowledge')
+        .then(response => {
+            // 获取返回的 JSON 数据
+            console.log(response.data)
+            if (response.data.code === 1) {
+                response.data.data.forEach(kl => {
+                    setbox_main.innerHTML = `<div class="knowledge—list"> <div class="knowledge—list-content">${kl}</div> <button id="setbox-del">删除</button></div>` + setbox_main.innerHTML
+                })
+            } else {
+                console.log(response.data.msg)
+                alert(response.data.msg)
+            }
+        })
+        .catch(error => {
+            // 如果有错误则输出到控制台
+            console.error('请求出错:', error)
+        })
 
     })
 

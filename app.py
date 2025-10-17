@@ -4,13 +4,15 @@ from module.database.mysql_db import init_mysql
 from module.database.redis_db import init_redis
 from api import register_blueprints
 from module.log_options import init_log
+from module.repository.repository import LocalKnowledgeBase
 
 
 def create_app():
     app = Flask(__name__)
-    # 初始化数据库连接（Flask 启动时创建一次）
+    # 初始化连接（Flask 启动时创建一次）
     app.db = init_mysql()
     app.redis = init_redis(app)
+    app.kb = LocalKnowledgeBase()
     # 注册蓝图
     register_blueprints(app)
 

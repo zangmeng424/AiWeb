@@ -14,9 +14,36 @@ def chat_with_bot():
         time.sleep(0.5)
         yield "event: start\ndata: {}\n\n"
         time.sleep(0.1)
-        yield """data: {"id":"8c169c73-b3d2-4f29-9291-89e59e4670c8","choices":[{"delta":{"content":"你","function_call":null,"refusal":null,"role":null,"tool_calls":null},"finish_reason":"stop","index":0,"logprobs":null}],"created":1759515813,"model":"deepseek-chat","object":"chat.completion.chunk","service_tier":null,"system_fingerprint":"fp_ffc7281d48_prod0820_fp8_kvcache","usage":{"completion_tokens":96,"prompt_tokens":8,"total_tokens":104,"completion_tokens_details":null,"prompt_tokens_details":{"audio_tokens":null,"cached_tokens":0},"prompt_cache_hit_tokens":0,"prompt_cache_miss_tokens":8}}\n\n"""
-        time.sleep(1)
-        yield """data: {"id":"8c169c73-b3d2-4f29-9291-89e59e4670c8","choices":[{"delta":{"content":"好","function_call":null,"refusal":null,"role":null,"tool_calls":null},"finish_reason":"stop","index":0,"logprobs":null}],"created":1759515813,"model":"deepseek-chat","object":"chat.completion.chunk","service_tier":null,"system_fingerprint":"fp_ffc7281d48_prod0820_fp8_kvcache","usage":{"completion_tokens":96,"prompt_tokens":8,"total_tokens":104,"completion_tokens_details":null,"prompt_tokens_details":{"audio_tokens":null,"cached_tokens":0},"prompt_cache_hit_tokens":0,"prompt_cache_miss_tokens":8}}\n\n"""
+
+        text = "# 标题\n这是**加粗**文本\n```python\nprint('hello')\n```"
+
+        for char in text:
+            # 构建数据字典
+            data = {
+                "id": "8c169c73-b3d2-4f29-9291-89e59e4670c8",
+                "choices": [{
+                    "delta": {
+                        "content": char,
+                        "function_call": None,
+                        "refusal": None,
+                        "role": None,
+                        "tool_calls": None
+                    },
+                    "finish_reason": "stop",
+                    "index": 0,
+                    "logprobs": None
+                }],
+                "created": 1759515813,
+                "model": "deepseek-chat",
+                "object": "chat.completion.chunk",
+                "service_tier": None,
+                "system_fingerprint": "fp_ffc7281d48_prod0820_fp8_kvcache",
+                "usage": {"completion_tokens": 96, "prompt_tokens": 8, "total_tokens": 104}
+            }
+
+            yield f"data: {json.dumps(data)}\n\n"
+            time.sleep(0.1)
+
         time.sleep(0.1)
         yield "event: finish\ndata: {}\n\n"
 

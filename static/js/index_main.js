@@ -1,4 +1,5 @@
-import {fetchEventSource} from "/static/js/esm.js"
+import {fetchEventSource} from "/static/js/fetch-event-source.js"
+import { marked } from "/static/js/marked.js"
 
 
 let msg_list = {} //全局消息列表，存储当前加载对话的所有对话内容，及之后更新的新消息
@@ -7,8 +8,8 @@ const sendBtn = document.querySelector('#send-btn')
 const MAX_LENGTH = 1000
 const tooltip = document.getElementById('tips')
 const chatIn = document.getElementById('chat-in')
-var sseController = null  // SSE 全局控制器
-
+let sseController = null  // SSE 全局控制器
+let last_assistant_yuan =""
 
 function ch_del(sessid) {
     const cspdel = document.querySelector('#chat-history-list .csp #csp-del')
@@ -206,7 +207,7 @@ function load_history(sessid){
                         const assistant_node = copy_assistant.cloneNode(true)
 
                         last_msg_id = item.parent_id
-                        assistant_node.querySelector(".content").innerText = item.content
+                        assistant_node.querySelector(".content").innerHTML =  marked.parse(item.content)
                         assistant_node.querySelector(".assistant-more-info").innerText = `used tokens:${item.more_info.used_token ? item.more_info.used_token : NULL}, model:${item.more_info.model ? item.more_info.model : NULL}`
                         assistant_node.dataset.id = find_uuid
                         //加载工具显示
@@ -406,6 +407,7 @@ async function send_msg() {
     const assistantDiv = document.querySelector("#source .c-assistant").cloneNode(true)
     assistantDiv.querySelector(".assistant-group").style.display = "none"
     const chat_area = document.querySelector("#chat-area")
+    let currentText = ''
 
     return fetchEventSource("/api/chat", {
         method: "POST",
@@ -413,6 +415,8 @@ async function send_msg() {
         body: JSON.stringify({session_id: session_id, data: task_data}),
         signal,
         onopen(response) {
+            currentText = '' // 每次新对话重置
+            last_assistant_yuan = ''
             if (response.ok && response.status === 200) return;
             throw new Error("非正常响应，终止连接");
         },
@@ -468,7 +472,9 @@ async function send_msg() {
                 //拼接AI信息
                 const data = JSON.parse(ev.data)
                 if (data.choices?.[0]?.delta?.content) {
-                    assistantDiv.querySelector(".content").innerText += data.choices[0].delta.content
+                    // 修改这里：累积文本并实时渲染markdown
+                    last_assistant_yuan += data.choices[0].delta.content
+                    assistantDiv.querySelector(".content").innerHTML = marked.parse(last_assistant_yuan)
                     if (data.choices[0].finish_reason === "stop") {
                         assistantDiv.querySelector(".assistant-more-info").innerText = `used tokens: ${data.usage.total_tokens},model: ${data.model}`
                     }
@@ -546,6 +552,11 @@ async function update_msg(element){
             content: element.querySelector(".content").innerText,
             parent_id: element.previousElementSibling.dataset.id
         }
+
+        if(element.className === "c-assistant"){//拿取assistant原始消息
+            msg["metadata"]["content"] = last_assistant_yuan
+        }
+
         if (element.querySelector(".tools-call-box")){
             msg["metadata"]["tool_calls"] = [
             {
@@ -939,7 +950,7 @@ chatIn.addEventListener('click', async function (e) {
     if (target && chatIn.contains(target)) {
         if (e.target.closest('.copy')) {
             const copy_box = e.target.closest('.copy')
-            copyText(e.target.closest('.c-user, .c-assistant').querySelector(".content").innerText)
+            copyText(msg_list[e.target.closest('.c-user, .c-assistant').dataset.id]["content"])
             copy_box.innerHTML = `<svg width="20" height="20" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M10 24L20 34L40 14" stroke="#5d5d5d" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>`
             setTimeout(() => {
                 copy_box.innerHTML = `<svg width="20" height="20" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -977,7 +988,7 @@ chatIn.addEventListener('click', async function (e) {
                         chat_main.appendChild(user_node)
                     } else if (msg_list[check_id].role === "assistant") {
                         const assistant_node = copy_assistant.cloneNode(true)
-                        assistant_node.querySelector(".content").innerText = msg_list[check_id].content
+                        assistant_node.querySelector(".content").innerHTML = marked.parse(msg_list[check_id].content)
                         assistant_node.querySelector(".assistant-more-info").innerText = `used tokens:${msg_list[check_id].more_info.used_token ? msg_list[check_id].more_info.used_token : NULL}, model:${msg_list[check_id].more_info.model ? msg_list[check_id].more_info.model : NULL}`
                         assistant_node.dataset.id = check_id
                         //加载工具显示

@@ -4,7 +4,7 @@ import time
 from flask import current_app
 
 
-def list_dao() -> json:
+def list_dao() -> dict:
     db = current_app.db
     sql = "SELECT id, session_id, title FROM chat_menu WHERE status = '1' ORDER BY create_at DESC"
     result = db.query(sql)

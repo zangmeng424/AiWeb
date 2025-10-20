@@ -26,7 +26,7 @@ def get_task_setting_dao(sessid:str) -> json:
 
 
 
-def change_task_setting_dao(data:json) -> bool:
+def change_task_setting_dao(data:dict) -> bool:
     db = current_app.db
 
     max_take = int(data["max_take"])
@@ -59,7 +59,7 @@ def get_model_dao() -> list:
 
 
 
-def change_model_dao(data:json) -> bool:
+def change_model_dao(data:dict) -> bool:
     db = current_app.db
 
     sql = """

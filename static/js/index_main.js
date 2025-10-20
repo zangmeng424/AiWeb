@@ -208,7 +208,10 @@ function load_history(sessid){
 
                         last_msg_id = item.parent_id
                         assistant_node.querySelector(".content").innerHTML =  marked.parse(item.content)
-                        assistant_node.querySelector(".assistant-more-info").innerText = `used tokens:${item.more_info.used_token ? item.more_info.used_token : NULL}, model:${item.more_info.model ? item.more_info.model : NULL}`
+                        if(item.more_info){
+                            assistant_node.querySelector(".assistant-more-info").innerText = `used tokens:${item.more_info.used_token ? item.more_info.used_token : NULL}, model:${item.more_info.model ? item.more_info.model : NULL}`
+                        }
+
                         assistant_node.dataset.id = find_uuid
                         //加载工具显示
                         if ("tool_return" in item) {
@@ -408,6 +411,7 @@ async function send_msg() {
     assistantDiv.querySelector(".assistant-group").style.display = "none"
     const chat_area = document.querySelector("#chat-area")
     let currentText = ''
+    const tool_call_box = document.querySelector('#source .tools-call-box').cloneNode(true)
 
     return fetchEventSource("/api/chat", {
         method: "POST",
@@ -438,10 +442,10 @@ async function send_msg() {
                         tools_box.remove()
                     })
                     tools_box.querySelector(".btn-confirm").addEventListener("click", function () {
-                        tools_box.querySelector(".tools-call-actions").remove()
+                        tools_box.querySelector(".tools-call-actions").style.display = "none"
                         axios.post('/api/chat/tools', {
                             tools_call_name: tools_box.querySelector(".tools-call-name .tools-content").innerText,
-                            tools_call_params: tools_box.querySelector(".tools-call-params .tools-content").innerText,
+                            tools_call_params: JSON.parse(tools_box.querySelector(".tools-call-params .tools-content").innerText),
                         })
                             .then(response => {
                                 // 获取返回的 JSON 数据
@@ -450,12 +454,14 @@ async function send_msg() {
                                     //获取到工具响应结果
                                     tools_box.querySelector(".tools-call-return .tools-content").innerText = response.data.data
                                     tools_box.querySelector(".tools-call-return").style.display = "block"
+                                    tools_box.querySelector(".tools-call-actions").remove()
                                     update_msg(tools_box)
                                     //二次消息发送
                                     send_msg()
 
 
                                 } else {
+                                    tools_box.querySelector(".tools-call-actions").style.display = "flex"
                                     console.log(response.data.msg)
                                     alert(response.data.msg)
                                 }
@@ -475,22 +481,22 @@ async function send_msg() {
                     // 修改这里：累积文本并实时渲染markdown
                     last_assistant_yuan += data.choices[0].delta.content
                     assistantDiv.querySelector(".content").innerHTML = marked.parse(last_assistant_yuan)
-                    if (data.choices[0].finish_reason === "stop") {
-                        assistantDiv.querySelector(".assistant-more-info").innerText = `used tokens: ${data.usage.total_tokens},model: ${data.model}`
-                    }
+
                 }
                 else if (data.choices?.[0]?.delta?.tool_calls) {
                     if (data.choices[0].delta.tool_calls[0].id) {
                         const tool_call_id = data.choices[0].delta.tool_calls[0].id
                         const tool_call_name = data.choices[0].delta.tool_calls[0].function.name
-                        const tool_call_box = document.querySelector('#source .tools-call-box').cloneNode(true)
                         assistantDiv.insertBefore(tool_call_box, assistantDiv.children[1])
-                        tool_call_box.querySelector(".tools-call-name .content").innerText = tool_call_name
-                        tool_call_box.querySelector(".tools-call-id .content").innerText = tool_call_id
+                        tool_call_box.querySelector(".tools-call-name .tools-content").innerText = tool_call_name
+                        tool_call_box.querySelector(".tools-call-id .tools-content").innerText = tool_call_id
                     }
                     else {
-                        tool_call_box.querySelector(".tools-call-params .content").innerText += data.choices[0].delta.tool_calls[0].function.arguments
+                        tool_call_box.querySelector(".tools-call-params .tools-content").innerText += data.choices[0].delta.tool_calls[0].function.arguments
                     }
+                }
+                else if (data.choices[0].finish_reason === "stop") {
+                    assistantDiv.querySelector(".assistant-more-info").innerText = `used tokens: ${data.usage.total_tokens},model: ${data.model}`
                 }
 
                 setTimeout(() => {

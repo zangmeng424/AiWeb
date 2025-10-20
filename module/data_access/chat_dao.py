@@ -1,7 +1,50 @@
+import asyncio
 import json
 import time
-
+from openai.types.chat import ChatCompletionChunk
+from openai import Stream
 from flask import current_app
+
+from module.ai_module.module_api_tmp import *
+
+
+def chat_dao(session_id: str, messages: list[dict], db, client,kb, loop) -> Stream[ChatCompletionChunk] or False:
+
+    sql = """SELECT 
+                a.temperature,
+                a.top_p,
+                b.model,
+                b.base_url,
+                b.api_key
+            FROM chat_menu AS a
+            JOIN model_menu AS b
+                ON a.model = b.model_uuid
+            WHERE a.session_id = %s
+            """
+    chat_info = db.query(sql, (session_id,))
+
+    if not chat_info:
+        return False
+
+    temperature = chat_info[0]["temperature"]
+    top_p = chat_info[0]["top_p"]
+    model = chat_info[0]["model"]
+    base_url = chat_info[0]["base_url"]
+    api_key = chat_info[0]["api_key"]
+
+
+
+
+    future = asyncio.run_coroutine_threadsafe(
+        client.get_tools(),
+        loop
+    )
+    tools = future.result()  # 阻塞等待返回结果
+
+    #拼接本地知识库
+    messages[-1]["content"] = f"来源本地知识库：\n {kb.show_all()}\n\n"+messages[-1]["content"] if messages[-1]["role"] == "user" else messages[-1]["content"]
+
+    return openai_tmp(temperature=temperature,top_p=top_p,model=model,base_url=base_url,api_key=api_key,messages=messages,tools=tools)
 
 
 def get_history_dao(session_id:str) -> json:
@@ -48,8 +91,7 @@ def get_history_dao(session_id:str) -> json:
 
     return rt_data
 
-
-def update_history_dao(msg_json:json) -> json:
+def update_history_dao(msg_json:dict) -> json:
     db = current_app.db
     #更新最新消息
     sql = "INSERT INTO chat_history (session_id,chat_uuid,role,content,children,metadata,created_at) VALUES (%s,%s,%s,%s,%s,%s,%s)"
@@ -69,3 +111,11 @@ def update_history_dao(msg_json:json) -> json:
 
 
     return True
+
+async def tools_dao(tools_call_name:str,tools_call_params:dict) -> str:
+    client = current_app.client
+
+    tool_return = await client.get_tool_return(tools_call_name,tools_call_params)
+
+    return tool_return
+

@@ -183,6 +183,16 @@ function knowledge_setting_cancel() {
     }, 150)
 }
 
+function global_setting_cancel() {
+    const setbox = document.querySelector('.global-setting-box')
+    setbox.classList.add('fade-out')
+    setTimeout(() => {
+        setbox.classList.remove('fade-out')
+        setbox.style.display = "none"
+        document.body.classList.remove('mask')
+    }, 150)
+}
+
 document.querySelector('.knowledge-setting-box #chatset').addEventListener("click", function (e) {
     const target = e.target.closest('#setbox-del,#setbox-save')
     const setbox_main = document.querySelector('.knowledge-setting-box #chatset')
@@ -247,6 +257,7 @@ document.querySelector('.model-setting-box #setbox-del').addEventListener("click
 document.querySelector('.model-setting-box #setbox-save').addEventListener("click", model_setting_save)
 document.querySelector('.model-setting-box #setbox-cancel').addEventListener("click", model_setting_cancel)
 document.querySelector('.knowledge-setting-box #setbox-cancel').addEventListener("click", knowledge_setting_cancel)
+document.querySelector('.global-setting-box #setbox-cancel').addEventListener("click", global_setting_cancel)
 
 
 

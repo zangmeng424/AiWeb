@@ -1,0 +1,88 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Web Terminal</title>
+<style>
+body { margin:0; font-family: monospace; background:#0b0b0b; color:#eee; height:100vh; display:flex; flex-direction:column; }
+#screen { background:#050505; color:#e6e6e6; padding:12px; flex:1; overflow:auto; white-space:pre-wrap; }
+#inputbar { display:flex; padding:8px; background:#0a0a0a; border-top:1px solid #222; }
+#cmd { flex:1; background:#111; color:#fff; border:1px solid #333; padding:8px; outline:none; }
+#send { background:#222; color:#fff; border:1px solid #333; padding:8px 12px; margin-left:8px; cursor:pointer; }
+.kind-out {}
+.kind-err { color:#ff7373; }
+.kind-info { color:#7fc7ff; }
+.kind-cmd { color:#b6ffb6; }
+.kind-exit { color:#999; }
+#hint { font-size:12px; color:#888; padding:6px 12px; }
+</style>
+</head>
+<body>
+<div id="screen" tabindex="0"></div>
+<div id="hint">提示：在输入框回车执行命令。后端会自动把 pip/python 映射到当前虚拟环境。</div>
+<div id="inputbar">
+<input id="cmd" autocomplete="off" placeholder="输入命令，例如 pip install requests"/>
+<button id="send">发送</button>
+</div>
+<script>
+(function(){
+const screen=document.getElementById('screen');
+const cmdInput=document.getElementById('cmd');
+const sendBtn=document.getElementById('send');
+
+function appendLine(kind,text){
+  const span=document.createElement('div');
+  span.className='kind-'+kind;
+  span.textContent=text;
+  screen.appendChild(span);
+  screen.scrollTop=screen.scrollHeight;
+}
+
+async function loadHistory(){
+  try{
+    const r=await fetch('/terminal/history');
+    if(r.ok){const data=await r.json(); for(const m of data) appendLine(m.kind,m.text);}
+  }catch(e){appendLine('info','加载历史失败: '+e+'\n');}
+}
+loadHistory();
+
+let esSupported=!!window.EventSource;
+let es=null;
+if(esSupported){startSSE();}else{startPolling();}
+
+function startSSE(){
+  if(es) es.close();
+  es=new EventSource('/terminal/stream');
+  es.onmessage=function(e){
+    try{const m=JSON.parse(e.data); appendLine(m.kind,m.text);}catch{}
+  };
+  es.onerror=function(){appendLine('info','[SSE断开,轮询备援]\n'); startPolling();}
+}
+
+let last_ts=0;
+let polling_timer=null;
+function startPolling(){
+  if(polling_timer) return;
+  polling_timer=setInterval(async()=>{
+    try{
+      const r=await fetch('/terminal/poll?since='+last_ts);
+      if(r.ok){const data=await r.json(); for(const m of data){appendLine(m.kind,m.text); if(m.time>last_ts) last_ts=m.time;}}
+    }catch(e){}
+  },500);
+}
+
+async function sendCmd(cmd){
+  if(!cmd) return;
+  try{
+    await fetch('/terminal/run',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({cmd:cmd})});
+    cmdInput.value='';
+  }catch(e){appendLine('err','发送命令失败: '+e+'\n');}
+}
+
+cmdInput.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault(); sendCmd(cmdInput.value.trim());}});
+sendBtn.addEventListener('click',()=>sendCmd(cmdInput.value.trim()));
+
+})();
+</script>
+</body>
+</html>

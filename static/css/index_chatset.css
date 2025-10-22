@@ -30,6 +30,7 @@
 }
 .model-setting-box,
 .knowledge-setting-box,
+.global-setting-box,
 .setting-box {
     opacity: 0;
     position: fixed;
@@ -66,6 +67,7 @@ body.mask::before {
 }
 .model-setting-box h2,
 .knowledge-setting-box h2,
+.global-setting-box h2,
 .setting-box h2 {
     display: flex;
     margin-top: 0;
@@ -73,6 +75,7 @@ body.mask::before {
 }
 .model-setting-box button,
 .knowledge-setting-box button,
+.global-setting-box button,
 .setting-box button {
     margin-left: 20px;
     float: right;
@@ -86,6 +89,7 @@ body.mask::before {
 
 .model-setting-box button:hover,
 .knowledge-setting-box button:hover,
+.global-setting-box button:hover,
 .setting-box button:hover {
     background: #13a06b;
 }
@@ -203,4 +207,58 @@ body.mask::before {
 
 .knowledge—list-content::-webkit-scrollbar {
     display: none;
+}
+
+/* 开关容器 */
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 45px;
+  height: 22px;
+}
+
+/* 隐藏原生复选框 */
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+/* 滑块背景 */
+.switch .slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #ccc;
+  transition: 0.4s;
+  border-radius: 34px;
+}
+
+/* 滑块小圆点 */
+.switch .slider::before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 2px;
+  bottom: 2px;
+  background-color: white;
+  transition: 0.3s;
+  border-radius: 50%;
+}
+
+/* 选中状态样式 */
+.switch input:checked + .slider {
+  background-color: #4caf50;
+}
+
+.switch input:checked + .slider::before {
+  transform: translateX(23px);
+}
+
+.global-options-checkbox{
+    margin-bottom: 10px;
 }

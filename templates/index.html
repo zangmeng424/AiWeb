@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>简化版 ChatGPT</title>
+    <title>AI Agent本地交互系统</title>
     <style>
         body {
             margin: 0;
@@ -13,17 +13,60 @@
             height: 100vh;
             background: #f7f7f8;
             color: #333;
+            justify-content: space-between
         }
     </style>
     
     <link rel="stylesheet" href="/static/css/index_chatset.css">
     <link rel="stylesheet" href="/static/css/index_sidebar.css">
     <link rel="stylesheet" href="/static/css/index_main.css">
-    <link rel="stylesheet" href="/static/css/github-markdown.min.css">
+    <link rel="stylesheet" href="/static/css/github-markdown.css">
     <script src="/static/js/axios.min.js"></script>
 </head>
 
 <body>
+
+    <div class="global-setting-box" style="display: none; user-select: none;">
+        <h2>全局设置</h2>
+        <div id="chatset" style="flex-direction: column;">
+            <div class="global-options-checkbox">
+                <label class="switch">
+                  <input type="checkbox" id="markdown-check">
+                  <span class="slider">
+                  </span>
+                </label>
+                Markdown渲染
+            </div>
+            <div class="global-options-checkbox">
+                <label class="switch">
+                  <input type="checkbox" id="moreinfo-check">
+                  <span class="slider">
+                  </span>
+                </label>
+                显示消息的token信息
+            </div>
+            <div class="global-options-checkbox">
+                <label class="switch">
+                  <input type="checkbox" id="knowledge-check">
+                  <span class="slider">
+                  </span>
+                </label>
+                使用本地知识库
+            </div>
+            <div class="global-options-checkbox">
+                <label class="switch">
+                  <input type="checkbox" id="mcp-check">
+                  <span class="slider">
+                  </span>
+                </label>
+                使用McpServices
+            </div>
+            <a href="/terminal" target="_blank">打开控制台</a>
+        </div>
+        <div style=" position: absolute;bottom: 20px;right: 40px;display: flex;">
+            <button id="setbox-cancel">返回</button>
+        </div>
+    </div>
 
     <div class="setting-box" style="display: none;">
         <h2>对话设置</h2>
@@ -189,7 +232,7 @@
         </div>
     </div>
 
-    <div class="knowledge-setting-box" style="display: none;height: 700px;width: 450px;">
+    <div class="knowledge-setting-box" style="display: none;height: 500px;width: 450px;">
         <h2>知识库设置</h2>
         <div id="chatset" style="flex-direction: column;overflow-y: auto;">
             <div class="knowledge—list"> <div class="knowledge—list-content">1+1=2！</div> <button id="setbox-del">删除</button></div>
@@ -261,7 +304,7 @@
 
         <!-- 侧边栏页脚 -->
         <div id="sidebar-footer">
-            <div class="footer-setting sidebar-btn-hover">
+            <div class="footer-setting sidebar-btn-hover" id="global-setting">
                 <svg width="20" height="20" viewBox="0 0 48 48" fill="none"
                     xmlns="http://www.w3.org/2000/svg">
                     <path d="M34.0003 41L44 24L34.0003 7H14.0002L4 24L14.0002 41H34.0003Z" fill="none" stroke="#000000" stroke-width="3"
@@ -421,6 +464,7 @@
                 <button class="btn-cancel">撤销</button>
                 <button class="btn-confirm">批准</button>
             </div>
+            <button class="tools-toggle-btn">展开</button>
         </div>
 
         <div id="chat-tree">

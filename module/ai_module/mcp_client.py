@@ -17,16 +17,19 @@ class MCPClient:
     def __init__(self) -> None:
         self.sessions = []
         self.all_tools = []
+        self.service_tools = {}
         self.tools_response = None
         self.exit_stack = AsyncExitStack()
 
-    async def connect_to_servers(self) -> None:
+    async def connect_to_servers(self):
         self.sessions = []
-        async with aiofiles.open('module/mcp_tools/mcp_config.json', 'r', encoding='utf-8') as f:
+        self.service_tools = {}  # ✅ 初始化
+
+        async with aiofiles.open('./module/mcp_tools/mcp_config.json', 'r', encoding='utf-8') as f:
             content = await f.read()
             mcp_config = json.loads(content)
 
-        for name,value in mcp_config["mcpServers"].items():
+        for name, value in mcp_config["mcpServers"].items():
             server_params = StdioServerParameters(command=value["command"], args=value["args"], env=None)
             stdio_transport = await self.exit_stack.enter_async_context(stdio_client(server_params))
             stdio, write = stdio_transport
@@ -34,14 +37,25 @@ class MCPClient:
             await session.initialize()
             response = await session.list_tools()
             tools = [tool.name for tool in response.tools]
-            logger.info(f"Connected to {name} with tools: {tools}")
+            print(f"✅ Connected to {name} with tools: {tools}")
+
+            self.service_tools[name] = {}
+            for tool in response.tools:
+                schema = tool.inputSchema or {
+                    "type": "object",
+                    "properties": {},
+                    "required": []
+                }
+                self.service_tools[name][tool.name] = {
+                    "name": tool.name,
+                    "description": tool.description or "",
+                    "parameters": schema
+                }
 
             self.sessions.append(session)
 
-        # 获取所有可用的tool
         self.all_tools = []
-
-        self.tools_response=None
+        self.tools_response = None
         for session in self.sessions:
             self.tools_response = await session.list_tools()
             for tool in self.tools_response.tools:
@@ -50,23 +64,35 @@ class MCPClient:
                     "tool": tool
                 })
 
+    def get_loaded_tools_info(self) -> dict:
+        # 返回当前加载的 MCP 工具信息（按 service 分类）
+        if not self.service_tools:
+            print("当前没有加载任何工具")
+            return {}
+
+        return self.service_tools
+
     async def get_tools(self) -> list[dict]:
         tools = []
-        if self.tools_response:
-            #组建 Deepseek 的标准 function call 格式
-            for tool in self.tools_response.tools:
-                tools.append({
-                    "type": "function",
-                    "function": {
-                        "name": tool.name,
-                        "description": tool.description,
-                        "parameters": tool.inputSchema or {
-                            "type": "object",
-                            "properties": {},
-                            "required": []
-                        }
+        if not self.all_tools:
+            print("当前没有加载任何工具")
+            return tools
+
+        # 遍历所有 service 的工具
+        for item in self.all_tools:
+            tool = item["tool"]
+            tools.append({
+                "type": "function",
+                "function": {
+                    "name": tool.name,
+                    "description": tool.description or "",
+                    "parameters": tool.inputSchema or {
+                        "type": "object",
+                        "properties": {},
+                        "required": []
                     }
-                })
+                }
+            })
 
         return tools
 

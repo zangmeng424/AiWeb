@@ -1,5 +1,6 @@
 /* 侧栏 */
 #sidebar {
+    flex-shrink: 0;
     text-align: center;
     border-right: 1px solid rgba(0, 0, 0, .04);
     width: 245px;
@@ -45,12 +46,11 @@
 #toggle-btn {
     float: right;
     align-items: center;
-    appearance: button;
     border: 0 solid rgba(13, 13, 13, .05);
     border-radius: 8px;
     color: #8f8f8f;
     cursor: w-resize;
-    display: flex;
+    display: inline-flex;
     font-size: 16px;
     height: 36px;
     justify-content: center;
@@ -64,10 +64,17 @@
     text-size-adjust: 100%;
     text-wrap-mode: nowrap;
     width: 36px;
+    transform: rotate(0deg);
+    transition: transform 0.3s;
+}
+
+.collapsed #toggle-btn{
+    transform: rotate(-90deg);
+    transition: transform 0.3s;
 }
 
 .sidebar-btn-hover:hover {
-    background-color: rgba(0, 0, 0, .07);
+    background-color: rgba(0, 0, 0, .06);
 }
 
 .sidebar-component-library {
@@ -275,3 +282,6 @@
     width: 36px;
 }
 
+.tasking {
+    background-color: rgba(0, 0, 0, .09);
+}

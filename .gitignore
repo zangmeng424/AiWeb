@@ -2,6 +2,9 @@
 .venv/
 logs/
 bge-small-zh-v1.5/
+node_modules/
+package.json
+package-lock.json
 *.index
 *.pkl
 test.html

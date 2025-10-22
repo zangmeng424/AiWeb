@@ -8,41 +8,40 @@ from flask import current_app
 from module.ai_module.module_api_tmp import *
 
 
-def chat_dao(session_id: str, messages: list[dict], db, client,kb, loop) -> Stream[ChatCompletionChunk] or False:
+def chat_dao(session_id: str, messages: list[dict], db, client,kb, loop, redis,on_knowledge,on_tools) -> Stream[ChatCompletionChunk]:
 
-    sql = """SELECT 
-                a.temperature,
-                a.top_p,
-                b.model,
-                b.base_url,
-                b.api_key
-            FROM chat_menu AS a
-            JOIN model_menu AS b
-                ON a.model = b.model_uuid
-            WHERE a.session_id = %s
-            """
-    chat_info = db.query(sql, (session_id,))
+    chat_info_str = redis.get(f'chat_menu:{session_id}')
 
-    if not chat_info:
-        return False
+    if chat_info_str:
+        chat_info = json.loads(chat_info_str)
+    else:
+        sql = """SELECT 
+                    a.temperature,
+                    a.top_p,
+                    b.model,
+                    b.base_url,
+                    b.api_key
+                FROM chat_menu AS a
+                JOIN model_menu AS b
+                    ON a.model = b.model_uuid
+                WHERE a.session_id = %s
+                """
+        chat_info = db.query(sql, (session_id,))
+        chat_info = chat_info[0]
+        redis.set(f'chat_menu:{session_id}',json.dumps(chat_info))
 
-    temperature = chat_info[0]["temperature"]
-    top_p = chat_info[0]["top_p"]
-    model = chat_info[0]["model"]
-    base_url = chat_info[0]["base_url"]
-    api_key = chat_info[0]["api_key"]
+    temperature = chat_info["temperature"]
+    top_p = chat_info["top_p"]
+    model = chat_info["model"]
+    base_url = chat_info["base_url"]
+    api_key = chat_info["api_key"]
 
 
+    tools = asyncio.run_coroutine_threadsafe(client.get_tools(),loop).result() if on_tools else None
 
-
-    future = asyncio.run_coroutine_threadsafe(
-        client.get_tools(),
-        loop
-    )
-    tools = future.result()  # 阻塞等待返回结果
-
-    #拼接本地知识库
-    messages[-1]["content"] = f"来源本地知识库：\n {kb.show_all()}\n\n"+messages[-1]["content"] if messages[-1]["role"] == "user" else messages[-1]["content"]
+    if on_knowledge:
+        #拼接本地知识库
+        messages[-1]["content"] = f"来源本地知识库：\n {kb.show_all()}\n\n"+messages[-1]["content"] if messages[-1]["role"] == "user" else messages[-1]["content"]
 
     return openai_tmp(temperature=temperature,top_p=top_p,model=model,base_url=base_url,api_key=api_key,messages=messages,tools=tools)
 

@@ -207,9 +207,14 @@ function load_history(sessid){
                         const assistant_node = copy_assistant.cloneNode(true)
 
                         last_msg_id = item.parent_id
-                        assistant_node.querySelector(".content").innerHTML =  marked.parse(item.content)
+                        if (localStorage.getItem('on_markdown') !== 'false')
+                            assistant_node.querySelector(".content").innerHTML =  marked.parse(item.content)
+                        else
+                            assistant_node.querySelector(".content").innerText =  item.content
                         if(item.more_info){
                             assistant_node.querySelector(".assistant-more-info").innerText = `used tokens:${item.more_info.used_token ? item.more_info.used_token : NULL}, model:${item.more_info.model ? item.more_info.model : NULL}`
+                            if (! (localStorage.getItem("on_moreinfo") !== 'false'))
+                                assistant_node.querySelector(".assistant-more-info").style.display = "none"
                         }
 
                         assistant_node.dataset.id = find_uuid
@@ -412,11 +417,12 @@ async function send_msg() {
     const chat_area = document.querySelector("#chat-area")
     let currentText = ''
     const tool_call_box = document.querySelector('#source .tools-call-box').cloneNode(true)
-
+    const on_tools = localStorage.getItem('on_tools') !== 'false'
+    const on_knowledge = localStorage.getItem('on_knowledge') !== 'false'
     return fetchEventSource("/api/chat", {
         method: "POST",
         headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({session_id: session_id, data: task_data}),
+        body: JSON.stringify({session_id: session_id,on_tools:on_tools,on_knowledge:on_knowledge, data: task_data}),
         signal,
         onopen(response) {
             currentText = '' // 每次新对话重置
@@ -480,7 +486,10 @@ async function send_msg() {
                 if (data.choices?.[0]?.delta?.content) {
                     // 修改这里：累积文本并实时渲染markdown
                     last_assistant_yuan += data.choices[0].delta.content
-                    assistantDiv.querySelector(".content").innerHTML = marked.parse(last_assistant_yuan)
+                    if (localStorage.getItem('on_markdown') !== 'false')
+                        assistantDiv.querySelector(".content").innerHTML =  marked.parse(last_assistant_yuan)
+                    else
+                        assistantDiv.querySelector(".content").innerText =  last_assistant_yuan
 
                 }
                 else if (data.choices?.[0]?.delta?.tool_calls) {
@@ -490,6 +499,9 @@ async function send_msg() {
                         assistantDiv.insertBefore(tool_call_box, assistantDiv.children[1])
                         tool_call_box.querySelector(".tools-call-name .tools-content").innerText = tool_call_name
                         tool_call_box.querySelector(".tools-call-id .tools-content").innerText = tool_call_id
+                        tool_call_box.classList.toggle('expanded')
+                        tool_call_box.querySelector('.tools-toggle-btn').textContent = '收起'
+
                     }
                     else {
                         tool_call_box.querySelector(".tools-call-params .tools-content").innerText += data.choices[0].delta.tool_calls[0].function.arguments
@@ -497,6 +509,8 @@ async function send_msg() {
                 }
                 else if (data.choices[0].finish_reason === "stop") {
                     assistantDiv.querySelector(".assistant-more-info").innerText = `used tokens: ${data.usage.total_tokens},model: ${data.model}`
+                    if (! (localStorage.getItem("on_moreinfo") !== 'false'))
+                        assistantDiv.querySelector(".assistant-more-info").style.display = "none"
                 }
 
                 setTimeout(() => {
@@ -614,11 +628,11 @@ async function update_msg(element){
         })
 }
 
-function update_task_list(){
+async function update_task_list(){
     //初始化 AI对话列表
     const chatHistoryList = document.querySelector("#chat-history-list")
     chatHistoryList.innerText = ""
-    axios.get('/api/task/list')
+    return axios.get('/api/task/list')
         .then(response => {
             const res = response.data
             if (res.code === 1) {
@@ -706,6 +720,11 @@ function update_task_list(){
                                 }
                             const old_session_id = window.location.pathname.split('/').filter(Boolean).pop()
                             if (old_session_id !== session_id){//防止重复加载
+                                const old_tasking = e.target.closest('#chat-history-list').querySelectorAll(".tasking")
+                                old_tasking.forEach(div => {
+                                  div.classList.remove('tasking')
+                                })
+                                e.target.closest('a').classList.add('tasking')
                                 // 更新地址栏地址
                                 history.pushState(null, '', `/chat/${session_id}`)
                                 load_history(session_id)
@@ -754,10 +773,18 @@ async function add_new_task(){
 
 }
 
+function open_setting_box(element){
+    document.body.classList.add('mask')
+    element.style.display = "block"
+    setTimeout(() => {
+        element.classList.add('active')
+    }, 10)
+}
+
 //页面初始化
-!(function () {
+!(async function () {
     //初始组建绑定
-    document.querySelector("#new-chat").addEventListener("click",async function (e) {
+    document.querySelector("#new-chat").addEventListener("click", async function (e) {
         e.preventDefault()
 
         await add_new_task()
@@ -766,78 +793,67 @@ async function add_new_task(){
 
     })
 
-    document.querySelector("#knowledge-setting").addEventListener("click",async function (e) {
+    document.querySelector("#knowledge-setting").addEventListener("click", async function (e) {
         e.preventDefault()
 
-        document.body.classList.add('mask')
         const setbox = document.querySelector('.knowledge-setting-box')
+        open_setting_box(setbox)
         const setbox_main = setbox.querySelector("#chatset")
         setbox_main.innerHTML = `<div class="knowledge—list"> <div class="knowledge—list-content" contenteditable="true"> </div><button id="setbox-save">保存</button></div>`
 
-        setbox.style.display = "block"
-        setTimeout(() => {
-            setbox.classList.add('active')
-        }, 10)
-
         await axios.get('/api/knowledge')
-        .then(response => {
-            // 获取返回的 JSON 数据
-            console.log(response.data)
-            if (response.data.code === 1) {
-                response.data.data.forEach(kl => {
-                    setbox_main.innerHTML = `<div class="knowledge—list"> <div class="knowledge—list-content">${kl}</div> <button id="setbox-del">删除</button></div>` + setbox_main.innerHTML
-                })
-            } else {
-                console.log(response.data.msg)
-                alert(response.data.msg)
-            }
-        })
-        .catch(error => {
-            // 如果有错误则输出到控制台
-            console.error('请求出错:', error)
-        })
+            .then(response => {
+                // 获取返回的 JSON 数据
+                console.log(response.data)
+                if (response.data.code === 1) {
+                    response.data.data.forEach(kl => {
+                        setbox_main.innerHTML = `<div class="knowledge—list"> <div class="knowledge—list-content">${kl}</div> <button id="setbox-del">删除</button></div>` + setbox_main.innerHTML
+                    })
+                } else {
+                    console.log(response.data.msg)
+                    alert(response.data.msg)
+                }
+            })
+            .catch(error => {
+                // 如果有错误则输出到控制台
+                console.error('请求出错:', error)
+            })
 
     })
 
-    document.querySelector("#model-setting").addEventListener("click",async function (e){
+    document.querySelector("#model-setting").addEventListener("click", async function (e) {
         e.preventDefault()
-        document.body.classList.add('mask')
-        const setbox = document.querySelector('.model-setting-box')
-        setbox.querySelector("#model-name").value = ""
-        setbox.style.display = "block"
-        setTimeout(() => {
-            setbox.classList.add('active')
-        }, 10)
-        let model_data=[]
+        open_setting_box(document.querySelector('.model-setting-box'))
+        let model_data = []
         await axios.get('/api/setting/model')
-        .then(response => {
-            // 获取返回的 JSON 数据
-            console.log(response.data)
-            if (response.data.code === 1) {
-                model_data = response.data.data
-                const chat_model = document.getElementById('model-name-list')
-                chat_model.innerHTML = ''
-                response.data.data.forEach(model_son =>{
-                    const opt = document.createElement('option')
-                    opt.value = model_son.model_name
-                    chat_model.appendChild(opt)
-                })
-            } else {
-                console.log(response.data.msg)
-                alert(response.data.msg)
-            }
-        })
-        .catch(error => {
-            // 如果有错误则输出到控制台
-            console.error('请求出错:', error)
-        })
+            .then(response => {
+                // 获取返回的 JSON 数据
+                console.log(response.data)
+                if (response.data.code === 1) {
+                    model_data = response.data.data
+                    const chat_model = document.getElementById('model-name-list')
+                    chat_model.innerHTML = ''
+                    response.data.data.forEach(model_son => {
+                        const opt = document.createElement('option')
+                        opt.value = model_son.model_name
+                        chat_model.appendChild(opt)
+                    })
+                } else {
+                    console.log(response.data.msg)
+                    alert(response.data.msg)
+                }
+            })
+            .catch(error => {
+                // 如果有错误则输出到控制台
+                console.error('请求出错:', error)
+            })
 
         // 监听每次选择变化
         const model_name = document.getElementById('model-name')
         await model_name.addEventListener('change', function (e) {
             console.log('选择已更改，当前值：', e.target.value)
-            model_data.forEach(model_son =>{
-                if (e.target.value === model_son.model_name){
+            model_data.forEach(model_son => {
+                if (e.target.value === model_son.model_name) {
                     setbox.querySelector("#model-uuid").innerText = model_son.model_uuid
                     setbox.querySelector("#model").value = model_son.model
                     setbox.querySelector("#system").value = model_son.system
@@ -849,7 +865,7 @@ async function add_new_task(){
                     setbox.querySelector("#top-p-in").value = model_son.top_p
                     setbox.querySelector("#base-url").value = model_son.base_url
                     setbox.querySelector("#api-key").value = model_son.api_key
-                }else{
+                } else {
                     setbox.querySelector("#model-uuid").innerText = ""
                 }
 
@@ -857,16 +873,39 @@ async function add_new_task(){
         })
     })
 
-    update_task_list()
+    document.querySelector("#global-setting").addEventListener("click", async function (e) {
+        e.preventDefault()
+        open_setting_box(document.querySelector('.global-setting-box'))
 
-    if (window.location.pathname.split('/').filter(Boolean).pop()){
+
+        document.querySelectorAll('.global-setting-box input[type="checkbox"]').forEach(checkbox => {
+            checkbox.checked = localStorage.getItem('on_' + checkbox.id.replace('-check', '')) !== 'false'
+        })
+
+        document.querySelector('.global-setting-box').addEventListener('change', e => {
+            if (e.target.matches('input[type="checkbox"]')) {
+                const id = e.target.id.replace('-check', '') // markdown / moreinfo / ...
+                localStorage.setItem('on_' + id, e.target.checked)
+            }
+        })
+
+    })
+
+    await update_task_list()
+
+    if (window.location.pathname.split('/').filter(Boolean).pop()) {
         const path = window.location.pathname
         const session_id = path.split('/').filter(Boolean).pop()
+        const chat_menu = document.querySelectorAll("#chat-history-list a")
+        chat_menu.forEach(chat => {
+            if (chat.href.split('/').filter(Boolean).pop() === session_id)
+                chat.classList.add('tasking')
+        })
+
         load_history(session_id)
-    }
-    else{
-        const lastsessid=localStorage.getItem('lastsessid')
-        if (lastsessid){
+    } else {
+        const lastsessid = localStorage.getItem('lastsessid')
+        if (lastsessid) {
             history.pushState(null, '', `/chat/${lastsessid}`)
             load_history(lastsessid)
         }
@@ -952,110 +991,24 @@ chatIn.addEventListener('mouseout', function (e) {
 
 
 chatIn.addEventListener('click', async function (e) {
-    const target = e.target.closest('.copy, .user-edit, .try-again, .check-button')
-    if (target && chatIn.contains(target)) {
-        if (e.target.closest('.copy')) {
-            const copy_box = e.target.closest('.copy')
-            copyText(msg_list[e.target.closest('.c-user, .c-assistant').dataset.id]["content"])
-            copy_box.innerHTML = `<svg width="20" height="20" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M10 24L20 34L40 14" stroke="#5d5d5d" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>`
-            setTimeout(() => {
-                copy_box.innerHTML = `<svg width="20" height="20" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M13 12.4316V7.8125C13 6.2592 14.2592 5 15.8125 5H40.1875C41.7408 5 43 6.2592 43 7.8125V32.1875C43 33.7408 41.7408 35 40.1875 35H35.5163"
-                                    stroke="#5d5d5d" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
-                                <path d="M32.1875 13H7.8125C6.2592 13 5 14.2592 5 15.8125V40.1875C5 41.7408 6.2592 43 7.8125 43H32.1875C33.7408 43 35 41.7408 35 40.1875V15.8125C35 14.2592 33.7408 13 32.1875 13Z"
-                                    fill="none" stroke="#5d5d5d" stroke-width="3" stroke-linejoin="round" />
-                            </svg>`
-            }, 2000)
-        }
-        else if (e.target.closest('.check-button')) {
-            const check_button = e.target.closest('.check-button')
-            let check_id = check_button.dataset.id
-            let chat_box = check_button.closest('.c-user, .c-assistant')
-            if (check_id !== "null") {
-                let next = chat_box.nextElementSibling
-                while (next) {
-                    let tmp = next.nextElementSibling // 先保存下一个
-                    next.remove() // 删除当前
-                    next = tmp // 继续
-                }
-                chat_box.remove() // 最后删除自身
-
-
-                const chat_main = document.querySelector("#chat-in")
-                const copy_user = document.querySelector("#source .c-user")
-                const copy_assistant = document.querySelector("#source .c-assistant")
-                const copy_tools = document.querySelector('#source .tools-call-box')
-
-                while (check_id) {
-                    if (msg_list[check_id].role === "user") {
-                        const user_node = copy_user.cloneNode(true)
-                        user_node.querySelector(".content").innerText = msg_list[check_id].content
-                        user_node.dataset.id = check_id
-                        chat_main.appendChild(user_node)
-                    } else if (msg_list[check_id].role === "assistant") {
-                        const assistant_node = copy_assistant.cloneNode(true)
-                        assistant_node.querySelector(".content").innerHTML = marked.parse(msg_list[check_id].content)
-                        assistant_node.querySelector(".assistant-more-info").innerText = `used tokens:${msg_list[check_id].more_info.used_token ? msg_list[check_id].more_info.used_token : NULL}, model:${msg_list[check_id].more_info.model ? msg_list[check_id].more_info.model : NULL}`
-                        assistant_node.dataset.id = check_id
-                        //加载工具显示
-                        if ("tool_return" in msg_list[check_id]) {
-                            //将工具响应数据存在字典内备用
-                            tools_menu[msg_list[check_id].tool_return.tool_call_id] = msg_list[check_id].tool_return.content
-                        }
-                        if (msg_list[check_id].tool_calls) {
-                            //一般只会有一条数据进入循环，为之后扩展做准备
-                            msg_list[check_id].tool_calls.forEach(tool => {
-                                const tool_node = copy_tools.cloneNode(true)
-                                tool_node.querySelector(".tools-call-name .tools-content").innerText = tool.function.name
-                                tool_node.querySelector(".tools-call-params .tools-content").innerText = tool.function.arguments
-                                tool_node.querySelector(".tools-call-id .tools-content").innerText = tool.id
-                                if (tools_menu[tool.id]) {
-                                    tool_node.querySelector(".tools-call-return .tools-content").innerText = tools_menu[tool.id]
-                                    tool_node.querySelector(".tools-call-return").style.display = "block"
-                                }
-                                assistant_node.insertBefore(tool_node, assistant_node.children[1])
-                            })
-                        }
-                        chat_main.appendChild(assistant_node)
-                    }
-
-                    const last_msg_id = msg_list[check_id].parent_id
-                    if (last_msg_id) {
-                        const children_list = msg_list[last_msg_id].children
-                        if (children_list.length > 1) {
-                            const total = children_list.length
-                            const index = children_list.indexOf(check_id)
-                            const position = index + 1
-                            const prev = children_list[index - 1] !== undefined ? children_list[index - 1] : null
-                            const next = children_list[index + 1] !== undefined ? children_list[index + 1] : null
-
-                            const chat_tree = document.querySelector("#source #chat-tree").cloneNode(true)
-                            const check_buttons = chat_tree.querySelectorAll(".check-button")
-                            check_buttons[0].dataset.id = prev
-                            check_buttons[1].dataset.id = next
-                            chat_tree.querySelector("#check-content").innerText = `${position}/${total}`
-
-                            if (chat_main.lastElementChild.className === "c-user") {
-                                chat_main.lastElementChild.lastElementChild.appendChild(chat_tree)
-                            } else {
-                                chat_main.lastElementChild.lastElementChild.prepend(chat_tree)
-                            }
-
-                        }
-                    }
-
-                    check_id = msg_list[check_id].children[0]
-                }
-            }
-        }
-        else if (e.target.closest('.try-again')) {
-            const target = e.target.closest('.try-again')
-            if (target && chatIn.contains(target)) {
-                tooltip.style.opacity = 0
-            }
-            const chat_box = e.target.closest('.c-user, .c-assistant')
-            const last_msg_id = chat_box.previousElementSibling.dataset.id
-
+    if (e.target.closest('.copy')) {
+        const copy_box = e.target.closest('.copy')
+        copyText(msg_list[e.target.closest('.c-user, .c-assistant').dataset.id]["content"])
+        copy_box.innerHTML = `<svg width="20" height="20" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M10 24L20 34L40 14" stroke="#5d5d5d" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>`
+        setTimeout(() => {
+            copy_box.innerHTML = `<svg width="20" height="20" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M13 12.4316V7.8125C13 6.2592 14.2592 5 15.8125 5H40.1875C41.7408 5 43 6.2592 43 7.8125V32.1875C43 33.7408 41.7408 35 40.1875 35H35.5163"
+                                stroke="#5d5d5d" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+                            <path d="M32.1875 13H7.8125C6.2592 13 5 14.2592 5 15.8125V40.1875C5 41.7408 6.2592 43 7.8125 43H32.1875C33.7408 43 35 41.7408 35 40.1875V15.8125C35 14.2592 33.7408 13 32.1875 13Z"
+                                fill="none" stroke="#5d5d5d" stroke-width="3" stroke-linejoin="round" />
+                        </svg>`
+        }, 2000)
+    }
+    else if (e.target.closest('.check-button')) {
+        const check_button = e.target.closest('.check-button')
+        let check_id = check_button.dataset.id
+        let chat_box = check_button.closest('.c-user, .c-assistant')
+        if (check_id !== "null") {
             let next = chat_box.nextElementSibling
             while (next) {
                 let tmp = next.nextElementSibling // 先保存下一个
@@ -1064,7 +1017,166 @@ chatIn.addEventListener('click', async function (e) {
             }
             chat_box.remove() // 最后删除自身
 
-            await send_msg()
+
+            const chat_main = document.querySelector("#chat-in")
+            const copy_user = document.querySelector("#source .c-user")
+            const copy_assistant = document.querySelector("#source .c-assistant")
+            const copy_tools = document.querySelector('#source .tools-call-box')
+
+            while (check_id) {
+                if (msg_list[check_id].role === "user") {
+                    const user_node = copy_user.cloneNode(true)
+                    user_node.querySelector(".content").innerText = msg_list[check_id].content
+                    user_node.dataset.id = check_id
+                    chat_main.appendChild(user_node)
+                } else if (msg_list[check_id].role === "assistant") {
+                    const assistant_node = copy_assistant.cloneNode(true)
+                    if (localStorage.getItem('on_markdown') !== 'false')
+                        assistant_node.querySelector(".content").innerHTML =  marked.parse(msg_list[check_id].content)
+                    else
+                        assistant_node.querySelector(".content").innerText = msg_list[check_id].content
+                    if(msg_list[check_id].more_info)
+                        assistant_node.querySelector(".assistant-more-info").innerText = `used tokens:${msg_list[check_id].more_info.used_token ? msg_list[check_id].more_info.used_token : NULL}, model:${msg_list[check_id].more_info.model ? msg_list[check_id].more_info.model : NULL}`
+                    if (! (localStorage.getItem("on_moreinfo") !== 'false'))
+                        assistant_node.querySelector(".assistant-more-info").style.display = "none"
+                    assistant_node.dataset.id = check_id
+                    //加载工具显示
+                    if ("tool_return" in msg_list[check_id]) {
+                        //将工具响应数据存在字典内备用
+                        tools_menu[msg_list[check_id].tool_return.tool_call_id] = msg_list[check_id].tool_return.content
+                    }
+                    if (msg_list[check_id].tool_calls) {
+                        //一般只会有一条数据进入循环，为之后扩展做准备
+                        msg_list[check_id].tool_calls.forEach(tool => {
+                            const tool_node = copy_tools.cloneNode(true)
+                            tool_node.querySelector(".tools-call-name .tools-content").innerText = tool.function.name
+                            tool_node.querySelector(".tools-call-params .tools-content").innerText = tool.function.arguments
+                            tool_node.querySelector(".tools-call-id .tools-content").innerText = tool.id
+                            if (tools_menu[tool.id]) {
+                                tool_node.querySelector(".tools-call-return .tools-content").innerText = tools_menu[tool.id]
+                                tool_node.querySelector(".tools-call-return").style.display = "block"
+                            }
+                            assistant_node.insertBefore(tool_node, assistant_node.children[1])
+                        })
+                    }
+                    chat_main.appendChild(assistant_node)
+                }
+
+                const last_msg_id = msg_list[check_id].parent_id
+                if (last_msg_id) {
+                    const children_list = msg_list[last_msg_id].children
+                    if (children_list.length > 1) {
+                        const total = children_list.length
+                        const index = children_list.indexOf(check_id)
+                        const position = index + 1
+                        const prev = children_list[index - 1] !== undefined ? children_list[index - 1] : null
+                        const next = children_list[index + 1] !== undefined ? children_list[index + 1] : null
+
+                        const chat_tree = document.querySelector("#source #chat-tree").cloneNode(true)
+                        const check_buttons = chat_tree.querySelectorAll(".check-button")
+                        check_buttons[0].dataset.id = prev
+                        check_buttons[1].dataset.id = next
+                        chat_tree.querySelector("#check-content").innerText = `${position}/${total}`
+
+                        if (chat_main.lastElementChild.className === "c-user") {
+                            chat_main.lastElementChild.lastElementChild.appendChild(chat_tree)
+                        } else {
+                            chat_main.lastElementChild.lastElementChild.prepend(chat_tree)
+                        }
+
+                    }
+                }
+
+                check_id = msg_list[check_id].children[0]
+            }
+        }
+    }
+    else if (e.target.closest('.try-again')) {
+        const target = e.target.closest('.try-again')
+        if (target && chatIn.contains(target)) {
+            tooltip.style.opacity = 0
+        }
+        const chat_box = e.target.closest('.c-user, .c-assistant')
+        const last_msg_id = chat_box.previousElementSibling.dataset.id
+
+        let next = chat_box.nextElementSibling
+        while (next) {
+            let tmp = next.nextElementSibling // 先保存下一个
+            next.remove() // 删除当前
+            next = tmp // 继续
+        }
+        chat_box.remove() // 最后删除自身
+
+        await send_msg()
+
+        const chat_main = document.querySelector("#chat-in")
+        const find_uuid = chat_main.lastElementChild.dataset.id
+        if (last_msg_id) {
+            const children_list = msg_list[last_msg_id].children
+            if (children_list.length > 1) {
+                const total = children_list.length
+                const index = children_list.indexOf(find_uuid)
+                const position = index + 1
+                const prev = children_list[index - 1] !== undefined ? children_list[index - 1] : null
+                const next = children_list[index + 1] !== undefined ? children_list[index + 1] : null
+
+                const chat_tree = document.querySelector("#source #chat-tree").cloneNode(true)
+                const check_buttons = chat_tree.querySelectorAll(".check-button")
+                check_buttons[0].dataset.id = prev
+                check_buttons[1].dataset.id = next
+                chat_tree.querySelector("#check-content").innerText = `${position}/${total}`
+
+                if (chat_main.lastElementChild.className === "c-user") {
+                    chat_main.lastElementChild.lastElementChild.appendChild(chat_tree)
+                } else {
+                    chat_main.lastElementChild.lastElementChild.prepend(chat_tree)
+                }
+            }
+        }
+
+    }
+    else if (e.target.closest('.user-edit')){
+        const target = e.target.closest('.user-edit')
+        if (target && chatIn.contains(target)) {
+            tooltip.style.opacity = 0
+        }
+
+        const user_box = e.target.closest('.c-user')
+        const edit_msg_box = document.querySelector("#source #edit-msg-box").cloneNode(true)
+        edit_msg_box.querySelector("#edit-msg").value = user_box.querySelector(".content").innerText
+        user_box.appendChild(edit_msg_box)
+        user_box.querySelector(".content").style.display = "none"
+        user_box.querySelector(".user-group").style.display = "none"
+        edit_msg_box.querySelector(".edit-buttons .edit-cancel").addEventListener("click",function (e){
+            edit_msg_box.remove()
+            user_box.querySelector(".content").style.display = "block"
+            user_box.querySelector(".user-group").style.display = "flex"
+        })
+        edit_msg_box.querySelector(".edit-buttons .edit-send").addEventListener("click",async function (e) {
+            const chat_box = e.target.closest('.c-user')
+            const last_msg_id = chat_box.previousElementSibling.dataset.id
+
+            let next = chat_box.nextElementSibling
+            while (next) {
+                let tmp = next.nextElementSibling // 先保存下一个
+                next.remove() // 删除当前
+                next = tmp // 继续
+            }
+
+            //发送数据到主区域
+            const userDiv = document.querySelector("#source .c-user").cloneNode(true)
+            userDiv.querySelector(".content").innerText = edit_msg_box.querySelector("#edit-msg").value
+            document.querySelector("#chat-in").appendChild(userDiv)
+            //顺滑滚动到底部
+            document.querySelector("#chat-area").scrollTo({
+                top: document.querySelector("#chat-area").scrollHeight,
+                behavior: 'smooth'
+            })
+
+            user_box.remove()
+
+            await update_msg(userDiv)
+
 
             const chat_main = document.querySelector("#chat-in")
             const find_uuid = chat_main.lastElementChild.dataset.id
@@ -1091,79 +1203,15 @@ chatIn.addEventListener('click', async function (e) {
                 }
             }
 
-        }
-        else if (e.target.closest('.user-edit')){
-            const target = e.target.closest('.user-edit')
-            if (target && chatIn.contains(target)) {
-                tooltip.style.opacity = 0
-            }
+            await send_msg()
 
-            const user_box = e.target.closest('.c-user')
-            const edit_msg_box = document.querySelector("#source #edit-msg-box").cloneNode(true)
-            edit_msg_box.querySelector("#edit-msg").value = user_box.querySelector(".content").innerText
-            user_box.appendChild(edit_msg_box)
-            user_box.querySelector(".content").style.display = "none"
-            user_box.querySelector(".user-group").style.display = "none"
-            edit_msg_box.querySelector(".edit-buttons .edit-cancel").addEventListener("click",function (e){
-                edit_msg_box.remove()
-                user_box.querySelector(".content").style.display = "block"
-                user_box.querySelector(".user-group").style.display = "flex"
-            })
-            edit_msg_box.querySelector(".edit-buttons .edit-send").addEventListener("click",async function (e) {
-                const chat_box = e.target.closest('.c-user')
-                const last_msg_id = chat_box.previousElementSibling.dataset.id
-
-                let next = chat_box.nextElementSibling
-                while (next) {
-                    let tmp = next.nextElementSibling // 先保存下一个
-                    next.remove() // 删除当前
-                    next = tmp // 继续
-                }
-
-                //发送数据到主区域
-                const userDiv = document.querySelector("#source .c-user").cloneNode(true)
-                userDiv.querySelector(".content").innerText = edit_msg_box.querySelector("#edit-msg").value
-                document.querySelector("#chat-in").appendChild(userDiv)
-                //顺滑滚动到底部
-                document.querySelector("#chat-area").scrollTo({
-                    top: document.querySelector("#chat-area").scrollHeight,
-                    behavior: 'smooth'
-                })
-
-                user_box.remove()
-
-                await update_msg(userDiv)
-
-
-                const chat_main = document.querySelector("#chat-in")
-                const find_uuid = chat_main.lastElementChild.dataset.id
-                if (last_msg_id) {
-                    const children_list = msg_list[last_msg_id].children
-                    if (children_list.length > 1) {
-                        const total = children_list.length
-                        const index = children_list.indexOf(find_uuid)
-                        const position = index + 1
-                        const prev = children_list[index - 1] !== undefined ? children_list[index - 1] : null
-                        const next = children_list[index + 1] !== undefined ? children_list[index + 1] : null
-
-                        const chat_tree = document.querySelector("#source #chat-tree").cloneNode(true)
-                        const check_buttons = chat_tree.querySelectorAll(".check-button")
-                        check_buttons[0].dataset.id = prev
-                        check_buttons[1].dataset.id = next
-                        chat_tree.querySelector("#check-content").innerText = `${position}/${total}`
-
-                        if (chat_main.lastElementChild.className === "c-user") {
-                            chat_main.lastElementChild.lastElementChild.appendChild(chat_tree)
-                        } else {
-                            chat_main.lastElementChild.lastElementChild.prepend(chat_tree)
-                        }
-                    }
-                }
-
-                await send_msg()
-
-            })
-        }
+        })
     }
+    else if (e.target.closest('.tools-toggle-btn')){
+        const box = e.target.closest('.tools-call-box')
+        box.classList.toggle('expanded')
+        e.target.closest('.tools-toggle-btn').textContent = box.classList.contains('expanded') ? '收起' : '展开'
+    }
+
 })
 

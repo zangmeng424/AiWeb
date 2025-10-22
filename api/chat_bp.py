@@ -16,12 +16,13 @@ def chat_with_bot():
     db = current_app.db
     loop = current_app.loop
     kb = current_app.kb
+    redis = current_app.redis
 
     def generate(data):
         try:
-            response = chat_dao(session_id=data["session_id"], messages=data["data"], db=db, client=client, loop=loop,kb=kb)
+            response = chat_dao(session_id=data["session_id"], messages=data["data"], db=db, client=client, loop=loop,kb=kb,redis=redis,on_tools=data["on_tools"],on_knowledge=data["on_knowledge"])
+            time.sleep(0.5)
             if response:
-                time.sleep(0.5)
                 yield "event: start\ndata: {}\n\n"
                 for chunk in response:
                     # 直接转成 JSON 字符串输出，保持和原始格式一致
@@ -33,6 +34,7 @@ def chat_with_bot():
                 yield "event: error\ndata: {}\n\n"
         except Exception:
             logger.exception(f'AI对话失败')
+            time.sleep(1)
             yield "event: error\ndata: {}\n\n"
 
 

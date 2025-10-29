@@ -146,6 +146,13 @@
     background: rgba(0, 0, 0, 0.35);
     z-index: 1000;
     display: none;
+    /* 新增样式 */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 24px;
+    text-align: center;
 }
 
 /* 小屏时侧边栏覆盖主区域 */

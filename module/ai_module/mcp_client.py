@@ -30,6 +30,11 @@ class MCPClient:
             mcp_config = json.loads(content)
 
         for name, value in mcp_config["mcpServers"].items():
+            # 检查是否启用
+            if not value.get("enabled", True):
+                logger.info(f"Skipped {name} (disabled)")
+                continue
+            
             server_params = StdioServerParameters(command=value["command"], args=value["args"], env=None)
             stdio_transport = await self.exit_stack.enter_async_context(stdio_client(server_params))
             stdio, write = stdio_transport
@@ -37,7 +42,7 @@ class MCPClient:
             await session.initialize()
             response = await session.list_tools()
             tools = [tool.name for tool in response.tools]
-            print(f"✅ Connected to {name} with tools: {tools}")
+            logger.info(f"Connected to {name} with tools: {tools}")
 
             self.service_tools[name] = {}
             for tool in response.tools:

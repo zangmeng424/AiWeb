@@ -23,75 +23,86 @@ class LocalKnowledgeBase:
     def __init__(self):
         self.docs = []
         self.index = None
+        self.vecs = None
         self.index_path = "./module/repository/dictionary.index"
         self.pkl_path = "./module/repository/dictionary.pkl"
         self._load_existing()
 
     def _load_existing(self):
-        """初始化时读取本地文件（若存在）"""
         if os.path.exists(self.pkl_path) and os.path.exists(self.index_path):
             with open(self.pkl_path, "rb") as f:
                 self.docs = pickle.load(f)
             self.index = faiss.read_index(self.index_path)
+            self.vecs = self.index.reconstruct_n(0, len(self.docs))
 
     def _save(self):
-        """保存索引和文档"""
         os.makedirs(os.path.dirname(self.index_path), exist_ok=True)
-        if self.index and self.docs:
+        if not self.docs:
+            if os.path.exists(self.index_path):
+                os.remove(self.index_path)
+            if os.path.exists(self.pkl_path):
+                os.remove(self.pkl_path)
+        else:
             faiss.write_index(self.index, self.index_path)
             with open(self.pkl_path, "wb") as f:
                 pickle.dump(self.docs, f)
 
     def _rebuild_index(self):
-        """根据 self.docs 重建向量索引"""
         if not self.docs:
             self.index = None
+            self.vecs = None
             return
         vecs = [get_embedding(doc) for doc in self.docs]
         dim = vecs[0].shape[0]
         self.index = faiss.IndexFlatL2(dim)
-        self.index.add(np.array(vecs, dtype="float32"))
+        self.vecs = np.array(vecs, dtype="float32")
+        self.index.add(self.vecs)
 
-    # ===== 基础操作 =====
     def build(self, documents: list[str]):
-        """仅支持外部传入文档构建"""
         self.docs = documents
         self._rebuild_index()
         self._save()
 
     def add(self, text: str):
-        """添加一条知识并更新索引"""
         self.docs.append(text)
         self._rebuild_index()
         self._save()
 
     def delete(self, keyword: str):
-        """根据关键字删除匹配的文档"""
         self.docs = [doc for doc in self.docs if keyword not in doc]
-        print(self.docs)
         self._rebuild_index()
         self._save()
 
     def show_all(self):
-        """返回所有知识内容"""
         return self.docs
 
     def search(self, query: str, top_k=3):
-        """检索最相关的文档，并去重"""
         if not self.index:
             return []
 
-        # 防止 top_k 超过文档数量
         top_k = min(top_k, len(self.docs))
-
-        # 获取查询向量
         q_vec = get_embedding(query).reshape(1, -1)
-        distances, indices = self.index.search(q_vec, top_k)
+        empty_vec = np.zeros_like(q_vec)  # ← 改回这一行
+        temp_vecs = np.vstack([self.vecs, empty_vec])
 
-        # 去重返回结果
+        import faiss
+        temp_index = faiss.IndexFlatL2(temp_vecs.shape[1])
+        temp_index.add(temp_vecs)
+
+        distances, indices = temp_index.search(q_vec, top_k + 1)
+
         result = []
+        seen = set()
         for i in indices[0]:
-            text = self.docs[i]
-            if text not in result:
-                result.append(text)
+            if i == len(self.docs):
+                result.append('')
+            else:
+                text = self.docs[i]
+                if text not in seen:
+                    seen.add(text)
+                    result.append(text)
+
+        if '' in result:
+            result = result[:result.index('')]
+
         return result

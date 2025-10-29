@@ -7,8 +7,10 @@ from flask import current_app
 
 def change_system_dao(sessid:str,system:str) -> bool:
     db = current_app.db
+    redis = current_app.redis
+    redis.delete(f'chat_menu:{sessid}')
 
-    sql = "UPDATE chat_menu SET system = %s WHERE session_id = %s"
+    sql = "UPDATE chat_menu SET `system` = %s WHERE session_id = %s"
     db.execute(sql, (system,sessid,))
 
     return True
@@ -19,7 +21,7 @@ def change_system_dao(sessid:str,system:str) -> bool:
 def get_task_setting_dao(sessid:str) -> json:
     db = current_app.db
 
-    sql = "SELECT session_id,title,system,avatar,model,max_take,temperature,top_p FROM chat_menu WHERE session_id = %s"
+    sql = "SELECT session_id,title,`system`,avatar,model,max_take,temperature,top_p FROM chat_menu WHERE session_id = %s"
     data=db.query(sql, (sessid,))
 
     return data[0] if data else {}
@@ -28,6 +30,8 @@ def get_task_setting_dao(sessid:str) -> json:
 
 def change_task_setting_dao(data:dict) -> bool:
     db = current_app.db
+    redis = current_app.redis
+    redis.delete(f'chat_menu:{data["session_id"]}')
 
     max_take = int(data["max_take"])
     model= data["model"]
@@ -42,7 +46,7 @@ def change_task_setting_dao(data:dict) -> bool:
         with open(avatar, "wb") as f:
             f.write(img_data)
         avatar = "/" + avatar
-    sql = "UPDATE chat_menu SET max_take=%s, model=%s, system=%s, title=%s, temperature=%s, top_p=%s, avatar=%s WHERE session_id=%s"
+    sql = "UPDATE chat_menu SET max_take=%s, model=%s, `system`=%s, title=%s, temperature=%s, top_p=%s, avatar=%s WHERE session_id=%s"
     db.execute(sql, (max_take, model, system, task_name, temperature, top_p, avatar, session_id,))
 
     return True
@@ -52,7 +56,7 @@ def change_task_setting_dao(data:dict) -> bool:
 def get_model_dao() -> list:
     db = current_app.db
 
-    sql = "SELECT model_uuid,system,model_name,model,base_url,api_key,max_take,temperature,top_p FROM model_menu"
+    sql = "SELECT model_uuid,`system`,model_name,model,base_url,api_key,max_take,temperature,top_p FROM model_menu"
     data=db.query(sql)
 
     return data
@@ -61,15 +65,17 @@ def get_model_dao() -> list:
 
 def change_model_dao(data:dict) -> bool:
     db = current_app.db
+    redis = current_app.redis
+    for key in redis.scan_iter('chat_menu:*'):
+        redis.delete(key)
 
-    sql = """
-    INSERT INTO model_menu
-    (model_uuid, model_name, model, system, max_take, temperature, top_p, base_url, api_key,create_at)
+    sql = """INSERT INTO model_menu
+    (model_uuid, model_name, model, `system`, max_take, temperature, top_p, base_url, api_key,create_at)
     VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
     ON DUPLICATE KEY UPDATE
         model_name = VALUES(model_name),
         model = VALUES(model),
-        system = VALUES(system),
+        `system` = VALUES(`system`),
         max_take = VALUES(max_take),
         temperature = VALUES(temperature),
         top_p = VALUES(top_p),

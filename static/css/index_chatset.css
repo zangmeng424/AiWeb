@@ -30,6 +30,8 @@
 }
 .model-setting-box,
 .knowledge-setting-box,
+.mcpserver-setting-box,
+.mcp-add-server-box,
 .global-setting-box,
 .setting-box {
     opacity: 0;
@@ -67,6 +69,8 @@ body.mask::before {
 }
 .model-setting-box h2,
 .knowledge-setting-box h2,
+.mcpserver-setting-box h2,
+.mcp-add-server-box h2,
 .global-setting-box h2,
 .setting-box h2 {
     display: flex;
@@ -75,6 +79,8 @@ body.mask::before {
 }
 .model-setting-box button,
 .knowledge-setting-box button,
+.mcpserver-setting-box button,
+.mcp-add-server-box button,
 .global-setting-box button,
 .setting-box button {
     margin-left: 20px;
@@ -89,6 +95,8 @@ body.mask::before {
 
 .model-setting-box button:hover,
 .knowledge-setting-box button:hover,
+.mcpserver-setting-box button:hover,
+.mcp-add-server-box button:hover,
 .global-setting-box button:hover,
 .setting-box button:hover {
     background: #13a06b;
@@ -261,4 +269,39 @@ body.mask::before {
 
 .global-options-checkbox{
     margin-bottom: 10px;
+}
+
+/* MCP服务器设置框滚动条样式 */
+.mcpserver-setting-box #chatset,
+.mcp-add-server-box #chatset {
+    overflow-y: scroll;
+    scrollbar-gutter: stable;
+}
+
+.mcpserver-setting-box #chatset::-webkit-scrollbar,
+.mcp-add-server-box #chatset::-webkit-scrollbar {
+    width: 8px;
+}
+
+.mcpserver-setting-box #chatset::-webkit-scrollbar-track,
+.mcp-add-server-box #chatset::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.mcpserver-setting-box #chatset::-webkit-scrollbar-thumb,
+.mcp-add-server-box #chatset::-webkit-scrollbar-thumb {
+    background: #d1d5db;
+    border-radius: 4px;
+}
+
+.mcpserver-setting-box #chatset::-webkit-scrollbar-thumb:hover,
+.mcp-add-server-box #chatset::-webkit-scrollbar-thumb:hover {
+    background: #b0b3b8;
+}
+
+/* 火狐浏览器滚动条样式 */
+.mcpserver-setting-box #chatset,
+.mcp-add-server-box #chatset {
+    scrollbar-width: thin;
+    scrollbar-color: #d1d5db transparent;
 }

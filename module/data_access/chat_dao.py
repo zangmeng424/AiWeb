@@ -38,10 +38,11 @@ def chat_dao(session_id: str, messages: list[dict], db, client,kb, loop, redis,o
 
 
     tools = asyncio.run_coroutine_threadsafe(client.get_tools(),loop).result() if on_tools else None
-
-    if on_knowledge:
-        #拼接本地知识库
-        messages[-1]["content"] = f"来源本地知识库：\n {kb.show_all()}\n\n"+messages[-1]["content"] if messages[-1]["role"] == "user" else messages[-1]["content"]
+    if messages[-1]["role"] == "user":
+        user_msg = messages[-1]["content"]
+        if on_knowledge:
+            #拼接本地知识库
+            messages[-1]["content"] = f"来源本地知识库：\n {kb.search(user_msg)}\n\n"+user_msg
 
     return openai_tmp(temperature=temperature,top_p=top_p,model=model,base_url=base_url,api_key=api_key,messages=messages,tools=tools)
 
@@ -49,9 +50,12 @@ def chat_dao(session_id: str, messages: list[dict], db, client,kb, loop, redis,o
 def get_history_dao(session_id:str) -> json:
     db = current_app.db
 
-    #拿取max_take和system
-    sql = "SELECT max_take, system FROM chat_menu WHERE session_id = %s"
+    # 拿取max_take和system
+    sql = "SELECT max_take, `system` FROM chat_menu WHERE session_id = %s"
     take_info=db.query(sql, (session_id,))
+    # 空对话判断
+    if not take_info:
+        return False
     ststem=take_info[0]["system"]
     max_take=take_info[0]["max_take"]
 
@@ -117,4 +121,48 @@ async def tools_dao(tools_call_name:str,tools_call_params:dict) -> str:
     tool_return = await client.get_tool_return(tools_call_name,tools_call_params)
 
     return tool_return
+
+def rollback_dao(session_id: str, chat_uuid: str) -> bool:
+    """
+    回退消息：删除指定的消息记录，并更新父消息的children列表
+    """
+    db = current_app.db
+    
+    try:
+        # 1. 获取要删除消息的信息
+        sql = "SELECT role, children, metadata FROM chat_history WHERE chat_uuid = %s AND session_id = %s"
+        msg_info = db.query(sql, (chat_uuid, session_id))
+        
+        if not msg_info:
+            return False
+        
+        msg_info = msg_info[0]
+        metadata = json.loads(msg_info["metadata"])
+        parent_id = metadata.get("parent_id")
+        
+        # 2. 如果有父消息，从父消息的children中移除该消息
+        if parent_id:
+            sql = "SELECT children FROM chat_history WHERE chat_uuid = %s"
+            parent_result = db.query(sql, (parent_id,))
+            if parent_result:
+                children = json.loads(parent_result[0]["children"])
+                if chat_uuid in children:
+                    children.remove(chat_uuid)
+                    # 更新父消息的children
+                    sql = "UPDATE chat_history SET children = %s WHERE chat_uuid = %s"
+                    db.execute(sql, (json.dumps(children), parent_id))
+        
+        # 3. 删除该消息（包括可能的tool消息）
+        # 先删除关联的tool消息
+        sql = "DELETE FROM chat_history WHERE session_id = %s AND role = 'tool' AND chat_uuid = %s"
+        db.execute(sql, (session_id, chat_uuid))
+        
+        # 再删除主消息
+        sql = "DELETE FROM chat_history WHERE chat_uuid = %s AND session_id = %s"
+        db.execute(sql, (chat_uuid, session_id))
+        
+        return True
+    except Exception as e:
+        print(f"回退消息失败: {e}")
+        return False
 

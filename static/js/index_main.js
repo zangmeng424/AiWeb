@@ -3,6 +3,7 @@ import { marked } from "/static/js/marked.js"
 
 
 let msg_list = {} //全局消息列表，存储当前加载对话的所有对话内容，及之后更新的新消息
+let tools_menu = {}
 const chatInput = document.querySelector('#chat-input')
 const sendBtn = document.querySelector('#send-btn')
 const MAX_LENGTH = 1000
@@ -119,12 +120,12 @@ async function ch_edit(sessid) {
         model_data.forEach(model_son =>{
             if (model_son.model_uuid === e.target.value){
                 setbox.querySelector("#system").value = model_son.system
-                setbox.querySelector("#max_take").value = model_son.max_take
-                setbox.querySelector("#max_take_in").value = model_son.max_take
+                setbox.querySelector("#max-take").value = model_son.max_take
+                setbox.querySelector("#max-take-in").value = model_son.max_take
                 setbox.querySelector("#temperature").value = model_son.temperature
-                setbox.querySelector("#temperature_in").value = model_sona.temperature
-                setbox.querySelector("#top_p").value = model_son.top_p
-                setbox.querySelector("#top_p_in").value = model_son.top_p
+                setbox.querySelector("#temperature-in").value = model_son.temperature
+                setbox.querySelector("#top-p").value = model_son.top_p
+                setbox.querySelector("#top-p-in").value = model_son.top_p
             }
         })
 
@@ -178,11 +179,15 @@ function listen_system(){
 
 }
 
-function load_history(sessid){
+async function load_history(sessid){
 
     if (!sessid) return
 
-    axios.get('/api/chat/history', {
+    const sidebarMask = document.querySelector('#global-mask')
+    sidebarMask.style.display = "flex"
+    sidebarMask.innerText = "加载中..."
+
+    await axios.get('/api/chat/history', {
             params: {
                 session_id: sessid,
             }
@@ -283,7 +288,7 @@ function load_history(sessid){
 
                 //最后一条消息的id，能通过后端传过来，根据最后创建时间来获得
                 let last_msg_id = response.data.last_msg_id
-                let tools_menu = {}
+
 
                 while (last_msg_id){
                     last_msg_id = load_msg(last_msg_id)
@@ -302,6 +307,7 @@ function load_history(sessid){
             else {
                 console.log(response.data.msg)
                 alert(response.data.msg)
+                history.pushState(null, '', `/`)
             }
         })
         .catch(error => {
@@ -309,6 +315,8 @@ function load_history(sessid){
             console.error('请求出错:', error)
         })
 
+    sidebarMask.style.display = "none"
+    sidebarMask.innerText = ""
 }
 
 //剪贴板操作
@@ -345,7 +353,8 @@ function generateUUID() {
 }
 
 //页面消息发送与新消息加载
-async function send_msg() {
+// userMsgToRollback: 如果发生错误需要回退的用户消息元素（可选）
+async function send_msg(userMsgToRollback = null) {
     // 如果上一个 SSE 还在，就终止它
     if (sseController) {
         sseController.abort()
@@ -462,8 +471,8 @@ async function send_msg() {
                                     tools_box.querySelector(".tools-call-return").style.display = "block"
                                     tools_box.querySelector(".tools-call-actions").remove()
                                     update_msg(tools_box)
-                                    //二次消息发送
-                                    send_msg()
+                                    //二次消息发送（工具调用后继续对话，不需要回退）
+                                    send_msg(null)
 
 
                                 } else {
@@ -479,6 +488,60 @@ async function send_msg() {
                     })
                 }
 
+            }
+            else if (ev.event === "error") {
+                // 错误处理：回退消息
+                console.log("AI对话出错，开始回退消息")
+                sseController = null
+                
+                // 1. 移除assistant消息DOM (如果已添加)
+                if (assistantDiv.parentNode) {
+                    assistantDiv.remove()
+                }
+                
+                // 2. 如果指定了要回退的用户消息，则回退它
+                if (userMsgToRollback && userMsgToRollback.parentNode) {
+                    const user_content = userMsgToRollback.querySelector(".content").innerText
+                    const user_uuid = userMsgToRollback.dataset.id
+                    
+                    // 3. 将用户消息内容放回输入框
+                    chatInput.value = user_content
+                    
+                    // 4. 发送回退请求到后端（删除用户消息记录）
+                    if (user_uuid) {
+                        axios.post('/api/chat/rollback', {
+                            session_id: session_id,
+                            chat_uuid: user_uuid
+                        }).then(response => {
+                            console.log("消息回退成功:", response.data)
+                        }).catch(error => {
+                            console.error('消息回退请求失败:', error)
+                        })
+                        
+                        // 5. 从msg_list中删除这条用户消息
+                        if (msg_list[user_uuid]) {
+                            // 从父消息的children中移除
+                            const parent_id = msg_list[user_uuid].parent_id
+                            if (parent_id && msg_list[parent_id]) {
+                                const children = msg_list[parent_id].children
+                                const index = children.indexOf(user_uuid)
+                                if (index > -1) {
+                                    children.splice(index, 1)
+                                }
+                            }
+                            // 删除消息本身
+                            delete msg_list[user_uuid]
+                        }
+                    }
+                    
+                    // 6. 移除用户消息DOM
+                    userMsgToRollback.remove()
+                    
+                    alert("AI对话出错，消息已回退到输入框，请重新发送")
+                } else {
+                    // 没有指定回退消息（如try-again场景），只提示错误
+                    alert("AI对话出错，请重试")
+                }
             }
             else {
                 //拼接AI信息
@@ -545,7 +608,7 @@ async function update_msg(element){
         created_at: ~~(Date.now() / 1000),
     }
 
-    if (element.className === "tools-call-box"){
+    if (element.classList.contains('tools-call-box')){
         msg["chat_uuid"]= element.closest('.c-assistant').dataset.id
         msg["role"]= "tool"
         msg["metadata"]={
@@ -781,6 +844,14 @@ function open_setting_box(element){
     }, 10)
 }
 
+function close_setting_box(element){
+    element.classList.remove('active')
+    setTimeout(() => {
+        element.style.display = "none"
+        document.body.classList.remove('mask')
+    }, 300)
+}
+
 //页面初始化
 !(async function () {
     //初始组建绑定
@@ -823,6 +894,7 @@ function open_setting_box(element){
 
     document.querySelector("#model-setting").addEventListener("click", async function (e) {
         e.preventDefault()
+        const setbox = document.querySelector('.model-setting-box')
         open_setting_box(document.querySelector('.model-setting-box'))
         let model_data = []
         await axios.get('/api/setting/model')
@@ -872,6 +944,411 @@ function open_setting_box(element){
             })
         })
     })
+
+    document.querySelector("#mcpserver-setting").addEventListener("click", async function (e) {
+        e.preventDefault()
+        const setbox = document.querySelector('.mcpserver-setting-box')
+        open_setting_box(setbox)
+        const mcpToolsList = setbox.querySelector("#mcp-tools-list")
+        
+        await loadMcpServers(mcpToolsList)
+    })
+
+    // 添加服务器按钮
+    document.querySelector("#mcp-add-btn").addEventListener("click", function(e) {
+        e.preventDefault()
+        const addBox = document.querySelector('.mcp-add-server-box')
+        open_setting_box(addBox)
+    })
+
+    // 确认添加服务器
+    document.querySelector("#mcp-add-confirm").addEventListener("click", async function() {
+        const jsonInput = document.querySelector('#mcp-server-json').value.trim()
+        
+        if (!jsonInput) {
+            alert('请输入服务器配置JSON')
+            return
+        }
+        
+        // 验证JSON格式
+        let serverData
+        try {
+            serverData = JSON.parse(jsonInput)
+        } catch (e) {
+            alert('JSON格式错误：' + e.message)
+            return
+        }
+        
+        // 禁用按钮，显示加载状态
+        this.disabled = true
+        this.innerText = '添加中...'
+        
+        try {
+            const response = await axios.post('/api/mcp/add', {
+                server_data: serverData
+            })
+            
+            if (response.data.code === 1) {
+                alert(response.data.msg + '\n\n是否现在重新加载？')
+                
+                // 关闭添加弹窗
+                document.querySelector('#mcp-add-cancel').click()
+                
+                // 重新加载服务器列表
+                const container = document.querySelector('#mcp-tools-list')
+                await loadMcpServers(container)
+            } else {
+                alert('添加失败：' + response.data.msg)
+            }
+        } catch (error) {
+            console.error('添加服务器失败:', error)
+            alert('添加失败：' + (error.response?.data?.msg || error.message))
+        } finally {
+            this.disabled = false
+            this.innerText = '确认添加'
+        }
+    })
+    
+    // 加载MCP服务器列表的函数
+    async function loadMcpServers(container) {
+        container.innerHTML = '<div style="text-align: center; padding: 20px;">加载中...</div>'
+        
+        try {
+            const response = await axios.get('/api/mcp/config')
+            console.log(response.data)
+            
+            if (response.data.code === 1) {
+                const serversData = response.data.data
+                container.innerHTML = ''
+                
+                // 显示并绑定重新加载按钮
+                const reloadBtn = document.querySelector('#mcp-reload-btn')
+                reloadBtn.style.display = 'block'
+                reloadBtn.onclick = async function() {
+                    if (!confirm('重新加载将断开所有MCP连接并重新建立，确定继续吗？')) return
+                    
+                    this.disabled = true
+                    this.innerText = '加载中...'
+                    
+                    try {
+                        const res = await axios.post('/api/mcp/reload')
+                        if (res.data.code === 1) {
+                            alert(res.data.msg)
+                            loadMcpServers(container)
+                        } else {
+                            alert('重新加载失败: ' + res.data.msg)
+                        }
+                    } catch (err) {
+                        console.error('重新加载失败:', err)
+                        alert('重新加载失败，请查看控制台')
+                    } finally {
+                        this.disabled = false
+                        this.innerText = '重新加载'
+                    }
+                }
+                
+                // 获取已加载的工具信息
+                const loadedResponse = await axios.get('/api/mcp')
+                let loadedToolsData = {}
+                if (loadedResponse.data.code === 1) {
+                    loadedToolsData = loadedResponse.data.data
+                }
+                    
+                    // 遍历每个服务
+                    serversData.forEach(serverData => {
+                        const serviceName = serverData.server_id
+                        const serviceTools = loadedToolsData[serviceName] || {}
+                        
+                        // 创建服务容器
+                        const serviceDiv = document.createElement('div')
+                        serviceDiv.className = 'mcp-service-container'
+                        serviceDiv.style.marginBottom = '20px'
+                        serviceDiv.style.padding = '15px'
+                        serviceDiv.style.border = '1px solid #ddd'
+                        serviceDiv.style.borderRadius = '8px'
+                        serviceDiv.style.backgroundColor = '#f9f9f9'
+                        
+                        // 服务标题行（包含按钮和标题）
+                        const serviceTitleRow = document.createElement('div')
+                        serviceTitleRow.style.display = 'flex'
+                        serviceTitleRow.style.alignItems = 'center'
+                        serviceTitleRow.style.justifyContent = 'space-between'
+                        serviceTitleRow.style.marginBottom = '15px'
+                        
+                        // 左侧：展开按钮 + 标题
+                        const leftSide = document.createElement('div')
+                        leftSide.style.display = 'flex'
+                        leftSide.style.alignItems = 'center'
+                        leftSide.style.cursor = 'pointer'
+                        leftSide.style.userSelect = 'none'
+                        leftSide.style.flex = '1'
+                        
+                        // 展开/收起按钮（默认收起状态）
+                        const toggleBtn = document.createElement('span')
+                        toggleBtn.className = 'mcp-toggle-btn'
+                        toggleBtn.innerHTML = '▼'
+                        toggleBtn.style.fontSize = '14px'
+                        toggleBtn.style.color = '#666'
+                        toggleBtn.style.transition = 'transform 0.3s ease'
+                        toggleBtn.style.display = 'inline-block'
+                        toggleBtn.style.marginRight = '10px'
+                        toggleBtn.style.minWidth = '16px'
+                        toggleBtn.style.transform = 'rotate(-90deg)'
+                        leftSide.appendChild(toggleBtn)
+                        
+                        // 服务标题
+                        const serviceTitle = document.createElement('h3')
+                        serviceTitle.innerText = serviceName
+                        serviceTitle.style.margin = '0'
+                        serviceTitle.style.color = serverData.enabled ? '#333' : '#999'
+                        serviceTitle.style.fontSize = '18px'
+                        leftSide.appendChild(serviceTitle)
+                        
+                        // 状态标签
+                        const statusBadge = document.createElement('span')
+                        statusBadge.style.marginLeft = '10px'
+                        statusBadge.style.padding = '2px 8px'
+                        statusBadge.style.borderRadius = '3px'
+                        statusBadge.style.fontSize = '12px'
+                        statusBadge.style.fontWeight = 'normal'
+                        if (serverData.is_loaded) {
+                            statusBadge.innerText = '已加载'
+                            statusBadge.style.backgroundColor = '#d4edda'
+                            statusBadge.style.color = '#155724'
+                        } else if (serverData.enabled) {
+                            statusBadge.innerText = '未加载'
+                            statusBadge.style.backgroundColor = '#fff3cd'
+                            statusBadge.style.color = '#856404'
+                        } else {
+                            statusBadge.innerText = '已禁用'
+                            statusBadge.style.backgroundColor = '#f8d7da'
+                            statusBadge.style.color = '#721c24'
+                        }
+                        leftSide.appendChild(statusBadge)
+                        
+                        serviceTitleRow.appendChild(leftSide)
+                        
+                        // 右侧：删除按钮 + 启用/禁用开关
+                        const rightSide = document.createElement('div')
+                        rightSide.style.display = 'flex'
+                        rightSide.style.alignItems = 'center'
+                        rightSide.style.gap = '10px'
+                        
+                        // 删除按钮
+                        const deleteBtn = document.createElement('button')
+                        deleteBtn.innerText = '删除'
+                        deleteBtn.style.padding = '4px 12px'
+                        deleteBtn.style.fontSize = '13px'
+                        deleteBtn.style.backgroundColor = '#dc3545'
+                        deleteBtn.style.color = 'white'
+                        deleteBtn.style.border = 'none'
+                        deleteBtn.style.borderRadius = '4px'
+                        deleteBtn.style.cursor = 'pointer'
+                        deleteBtn.style.transition = 'background-color 0.2s'
+                        deleteBtn.onmouseover = () => deleteBtn.style.backgroundColor = '#c82333'
+                        deleteBtn.onmouseout = () => deleteBtn.style.backgroundColor = '#dc3545'
+                        deleteBtn.onclick = async function(e) {
+                            e.stopPropagation()
+                            if (!confirm(`确定要删除服务器 "${serviceName}" 吗？\n删除后需要重新加载才能生效。`)) {
+                                return
+                            }
+                            
+                            deleteBtn.disabled = true
+                            deleteBtn.innerText = '删除中...'
+                            
+                            try {
+                                const res = await axios.delete(`/api/mcp/delete/${serviceName}`)
+                                if (res.data.code === 1) {
+                                    alert(res.data.msg)
+                                    // 重新加载列表
+                                    loadMcpServers(container)
+                                } else {
+                                    alert('删除失败: ' + res.data.msg)
+                                    deleteBtn.disabled = false
+                                    deleteBtn.innerText = '删除'
+                                }
+                            } catch (err) {
+                                console.error('删除失败:', err)
+                                alert('删除失败，请查看控制台')
+                                deleteBtn.disabled = false
+                                deleteBtn.innerText = '删除'
+                            }
+                        }
+                        rightSide.appendChild(deleteBtn)
+                        
+                        // 启用/禁用开关
+                        const toggleSwitch = document.createElement('label')
+                        toggleSwitch.className = 'switch'
+                        
+                        const switchInput = document.createElement('input')
+                        switchInput.type = 'checkbox'
+                        switchInput.checked = serverData.enabled
+                        switchInput.dataset.serverId = serviceName
+                        
+                        const switchSlider = document.createElement('span')
+                        switchSlider.className = 'slider'
+                        
+                        toggleSwitch.appendChild(switchInput)
+                        toggleSwitch.appendChild(switchSlider)
+                        rightSide.appendChild(toggleSwitch)
+                        
+                        serviceTitleRow.appendChild(rightSide)
+                        
+                        // 切换开关事件
+                        switchInput.addEventListener('change', async function(e) {
+                            e.stopPropagation()  // 防止触发展开/收起
+                            const serverId = this.dataset.serverId
+                            const newStatus = this.checked
+                            
+                            this.disabled = true
+                            
+                            await axios.post(`/api/mcp/toggle/${serverId}`)
+                                .then(res => {
+                                    if (res.data.code === 1) {
+                                        console.log(`${serverId} 状态已切换`)
+                                        // 提示需要重新加载
+                                        if (confirm(res.data.msg + '\n\n是否现在重新加载？')) {
+                                            axios.post('/api/mcp/reload').then(() => {
+                                                loadMcpServers(container)
+                                            })
+                                        }
+                                    } else {
+                                        alert('切换失败: ' + res.data.msg)
+                                        this.checked = !newStatus
+                                    }
+                                })
+                                .catch(err => {
+                                    console.error('切换失败:', err)
+                                    alert('切换失败')
+                                    this.checked = !newStatus
+                                })
+                                .finally(() => {
+                                    this.disabled = false
+                                })
+                        })
+                        
+                        serviceDiv.appendChild(serviceTitleRow)
+                        
+                        // 工具列表容器（默认收起）
+                        const toolsContainer = document.createElement('div')
+                        toolsContainer.className = 'mcp-tools-container'
+                        toolsContainer.style.maxHeight = '0px'
+                        toolsContainer.style.overflow = 'hidden'
+                        toolsContainer.style.transition = 'max-height 0.3s ease, opacity 0.3s ease'
+                        toolsContainer.style.opacity = '0'
+                        
+                        // 遍历该服务的工具（如果有）
+                        if (Object.keys(serviceTools).length > 0) {
+                            Object.keys(serviceTools).forEach(toolName => {
+                                const tool = serviceTools[toolName]
+                            
+                            const toolDiv = document.createElement('div')
+                            toolDiv.style.marginBottom = '15px'
+                            toolDiv.style.padding = '12px'
+                            toolDiv.style.backgroundColor = '#fff'
+                            toolDiv.style.border = '1px solid #e0e0e0'
+                            toolDiv.style.borderRadius = '5px'
+                            
+                            // 工具名称
+                            const toolNameDiv = document.createElement('div')
+                            toolNameDiv.style.fontWeight = 'bold'
+                            toolNameDiv.style.color = '#0066cc'
+                            toolNameDiv.style.marginBottom = '8px'
+                            toolNameDiv.style.fontSize = '14px'
+                            toolNameDiv.innerText = tool.name
+                            toolDiv.appendChild(toolNameDiv)
+                            
+                            // 工具描述
+                            if (tool.description) {
+                                const descDiv = document.createElement('div')
+                                descDiv.style.color = '#666'
+                                descDiv.style.marginBottom = '8px'
+                                descDiv.style.fontSize = '13px'
+                                descDiv.style.lineHeight = '1.5'
+                                descDiv.style.whiteSpace = 'pre-wrap'
+                                descDiv.innerText = tool.description
+                                toolDiv.appendChild(descDiv)
+                            }
+                            
+                            // 参数信息
+                            if (tool.parameters && tool.parameters.properties) {
+                                const paramsDiv = document.createElement('div')
+                                paramsDiv.style.marginTop = '8px'
+                                paramsDiv.style.fontSize = '12px'
+                                paramsDiv.style.color = '#555'
+                                
+                                const paramsTitle = document.createElement('div')
+                                paramsTitle.style.fontWeight = 'bold'
+                                paramsTitle.style.marginBottom = '5px'
+                                paramsTitle.innerText = '参数:'
+                                paramsDiv.appendChild(paramsTitle)
+                                
+                                const paramsList = document.createElement('ul')
+                                paramsList.style.margin = '0'
+                                paramsList.style.paddingLeft = '20px'
+                                
+                                Object.keys(tool.parameters.properties).forEach(paramName => {
+                                    const param = tool.parameters.properties[paramName]
+                                    const paramItem = document.createElement('li')
+                                    paramItem.style.marginBottom = '3px'
+                                    const required = tool.parameters.required && tool.parameters.required.includes(paramName) ? ' (必需)' : ' (可选)'
+                                    paramItem.innerHTML = `<span style="color: #0066cc;">${paramName}</span>: ${param.type || 'any'}${required}`
+                                    paramsList.appendChild(paramItem)
+                                })
+                                
+                                paramsDiv.appendChild(paramsList)
+                                toolDiv.appendChild(paramsDiv)
+                            }
+                            
+                                toolsContainer.appendChild(toolDiv)
+                            })
+                        } else {
+                            // 如果没有工具，显示提示
+                            const noToolsDiv = document.createElement('div')
+                            noToolsDiv.style.padding = '12px'
+                            noToolsDiv.style.color = '#999'
+                            noToolsDiv.style.fontSize = '13px'
+                            noToolsDiv.style.textAlign = 'center'
+                            noToolsDiv.innerText = serverData.enabled ? '服务未加载或无可用工具' : '服务已禁用'
+                            toolsContainer.appendChild(noToolsDiv)
+                        }
+                        
+                        serviceDiv.appendChild(toolsContainer)
+                        
+                        // 添加点击事件：收起/展开（只在左侧区域触发）
+                        leftSide.addEventListener('click', function() {
+                            const isCollapsed = toolsContainer.style.maxHeight === '0px'
+                            
+                            if (isCollapsed) {
+                                // 展开
+                                toolsContainer.style.maxHeight = '2000px'
+                                toolsContainer.style.opacity = '1'
+                                toggleBtn.style.transform = 'rotate(0deg)'
+                            } else {
+                                // 收起
+                                toolsContainer.style.maxHeight = '0px'
+                                toolsContainer.style.opacity = '0'
+                                toggleBtn.style.transform = 'rotate(-90deg)'
+                            }
+                        })
+                        
+                        container.appendChild(serviceDiv)
+                    })
+                    
+                // 如果没有服务
+                if (serversData.length === 0) {
+                    container.innerHTML += '<div style="text-align: center; padding: 20px; color: #999;">暂无MCP服务器配置</div>'
+                }
+            } else {
+                container.innerHTML = `<div style="text-align: center; padding: 20px; color: #f00;">${response.data.msg || '加载失败'}</div>`
+                console.log(response.data.msg)
+                alert(response.data.msg)
+            }
+        } catch (error) {
+            console.error('请求出错:', error)
+            container.innerHTML = '<div style="text-align: center; padding: 20px; color: #f00;">加载失败，请检查网络连接</div>'
+        }
+    }
 
     document.querySelector("#global-setting").addEventListener("click", async function (e) {
         e.preventDefault()
@@ -949,7 +1426,7 @@ sendBtn.onclick = () => {
 
         update_msg(userDiv)
 
-        send_msg()
+        send_msg(userDiv)  // 传递userDiv，出错时回退这条消息
 
     }
 }
@@ -1107,7 +1584,7 @@ chatIn.addEventListener('click', async function (e) {
         }
         chat_box.remove() // 最后删除自身
 
-        await send_msg()
+        await send_msg(null)  // try-again不需要回退，用户消息已存在
 
         const chat_main = document.querySelector("#chat-in")
         const find_uuid = chat_main.lastElementChild.dataset.id
@@ -1203,7 +1680,7 @@ chatIn.addEventListener('click', async function (e) {
                 }
             }
 
-            await send_msg()
+            await send_msg(userDiv)  // 传递userDiv，出错时回退这条消息
 
         })
     }

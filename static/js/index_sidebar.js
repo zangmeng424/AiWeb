@@ -19,7 +19,7 @@ toggleBtn.addEventListener("click", () => {
     if (!sidebar.classList.contains("collapsed")) {
         if (w < COLLAPSE_WIDTH) {
             sidebar.classList.add("overlay")
-            sidebarMask.style.display = "block"
+            sidebarMask.style.display = "flex"
             isManualExpand = true
         }
     } else {

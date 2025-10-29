@@ -193,6 +193,33 @@ function global_setting_cancel() {
     }, 150)
 }
 
+function mcpserver_setting_cancel() {
+    const setbox = document.querySelector('.mcpserver-setting-box')
+    // 隐藏重新加载按钮
+    const reloadBtn = document.querySelector('#mcp-reload-btn')
+    if (reloadBtn) reloadBtn.style.display = 'none'
+    
+    setbox.classList.add('fade-out')
+    setTimeout(() => {
+        setbox.classList.remove('fade-out')
+        setbox.style.display = "none"
+        document.body.classList.remove('mask')
+    }, 150)
+}
+
+function mcp_add_server_cancel() {
+    const setbox = document.querySelector('.mcp-add-server-box')
+    setbox.classList.add('fade-out')
+    setTimeout(() => {
+        setbox.classList.remove('fade-out')
+        setbox.style.display = "none"
+        // 不要移除mask，因为下层的mcpserver-setting-box还在显示
+        // document.body.classList.remove('mask')
+        // 清空输入框
+        document.querySelector('#mcp-server-json').value = ''
+    }, 150)
+}
+
 document.querySelector('.knowledge-setting-box #chatset').addEventListener("click", function (e) {
     const target = e.target.closest('#setbox-del,#setbox-save')
     const setbox_main = document.querySelector('.knowledge-setting-box #chatset')
@@ -258,6 +285,8 @@ document.querySelector('.model-setting-box #setbox-save').addEventListener("clic
 document.querySelector('.model-setting-box #setbox-cancel').addEventListener("click", model_setting_cancel)
 document.querySelector('.knowledge-setting-box #setbox-cancel').addEventListener("click", knowledge_setting_cancel)
 document.querySelector('.global-setting-box #setbox-cancel').addEventListener("click", global_setting_cancel)
+document.querySelector('.mcpserver-setting-box #setbox-cancel').addEventListener("click", mcpserver_setting_cancel)
+document.querySelector('.mcp-add-server-box #mcp-add-cancel').addEventListener("click", mcp_add_server_cancel)
 
 
 

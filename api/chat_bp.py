@@ -20,10 +20,13 @@ def chat_with_bot():
 
     def generate(data):
         try:
-            response = chat_dao(session_id=data["session_id"], messages=data["data"], db=db, client=client, loop=loop,kb=kb,redis=redis,on_tools=data["on_tools"],on_knowledge=data["on_knowledge"])
+            # 先发送start事件，确保SSE连接已建立
+            yield "event: start\ndata: {}\n\n"
             time.sleep(0.5)
+            
+            response = chat_dao(session_id=data["session_id"], messages=data["data"], db=db, client=client, loop=loop,kb=kb,redis=redis,on_tools=data["on_tools"],on_knowledge=data["on_knowledge"])
+            
             if response:
-                yield "event: start\ndata: {}\n\n"
                 for chunk in response:
                     # 直接转成 JSON 字符串输出，保持和原始格式一致
                     yield f"data: {chunk.model_dump_json()}\n\n"
@@ -34,7 +37,7 @@ def chat_with_bot():
                 yield "event: error\ndata: {}\n\n"
         except Exception:
             logger.exception(f'AI对话失败')
-            time.sleep(1)
+            time.sleep(0.1)
             yield "event: error\ndata: {}\n\n"
 
 
@@ -51,8 +54,12 @@ def history():
         session_id = request.args.get('session_id')
         if session_id:
             try:
-                rt_d = get_history_dao(session_id)
-                rt_d["code"] = 1
+                history_d = get_history_dao(session_id)
+                if history_d:
+                    rt_d = history_d
+                    rt_d["code"] = 1
+                else:
+                    raise Exception("尝试查询空对话")
             except Exception:
                 logger.exception(f'AI对话历史记载失败')
                 rt_d["msg"] = "AI对话历史记载失败"
@@ -96,6 +103,35 @@ def tools():
         rt_d["msg"] = "AI调用工具失败"
 
     return rt_d
+
+
+@chat_bp.route('/rollback', methods=['POST'])
+def rollback():
+    """消息回退接口：删除指定的消息记录"""
+    rt_d = {"code": 1, "msg": "消息回退成功"}
+    try:
+        data = request.get_json()
+        session_id = data.get("session_id")
+        chat_uuid = data.get("chat_uuid")
+        
+        if not session_id or not chat_uuid:
+            rt_d["code"] = 0
+            rt_d["msg"] = "参数不完整"
+            return jsonify(rt_d)
+        
+        # 调用DAO层删除消息
+        from module.data_access.chat_dao import rollback_dao
+        result = rollback_dao(session_id, chat_uuid)
+        
+        if not result:
+            rt_d["code"] = 0
+            rt_d["msg"] = "消息回退失败"
+    except Exception:
+        logger.exception('消息回退失败')
+        rt_d["code"] = 0
+        rt_d["msg"] = "消息回退失败"
+    
+    return jsonify(rt_d)
 
 
 

@@ -566,12 +566,10 @@ async function send_msg(userMsgToRollback = null) {
                         tool_call_box.querySelector('.tools-toggle-btn').textContent = '收起'
 
                     }
-                    else {
-                        tool_call_box.querySelector(".tools-call-params .tools-content").innerText += data.choices[0].delta.tool_calls[0].function.arguments
-                    }
+                    tool_call_box.querySelector(".tools-call-params .tools-content").innerText += data.choices[0].delta.tool_calls[0].function.arguments ? data.choices[0].delta.tool_calls[0].function.arguments : ""
                 }
                 else if (data.choices[0].finish_reason === "stop") {
-                    assistantDiv.querySelector(".assistant-more-info").innerText = `used tokens: ${data.usage.total_tokens},model: ${data.model}`
+                    assistantDiv.querySelector(".assistant-more-info").innerText = `used tokens: ${data.usage ? data.usage.total_tokens : "NULL"},model: ${data.model}`
                     if (! (localStorage.getItem("on_moreinfo") !== 'false'))
                         assistantDiv.querySelector(".assistant-more-info").style.display = "none"
                 }

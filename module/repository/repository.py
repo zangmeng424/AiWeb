@@ -82,7 +82,7 @@ class LocalKnowledgeBase:
 
         top_k = min(top_k, len(self.docs))
         q_vec = get_embedding(query).reshape(1, -1)
-        empty_vec = np.zeros_like(q_vec)  # ← 改回这一行
+        empty_vec = np.zeros_like(q_vec)
         temp_vecs = np.vstack([self.vecs, empty_vec])
 
         import faiss

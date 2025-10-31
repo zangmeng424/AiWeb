@@ -12,6 +12,55 @@ const chatIn = document.getElementById('chat-in')
 let sseController = null  // SSE 全局控制器
 let last_assistant_yuan =""
 
+// 回到底部按钮配置
+const SCROLL_TO_BOTTOM_THRESHOLD = 800 // 距离底部多少像素时显示按钮
+
+// 延迟初始化，确保DOM已加载
+let scrollToBottomBtn = null
+let chatArea = null
+
+function initScrollToBottomButton() {
+    scrollToBottomBtn = document.querySelector('#scroll-to-bottom-btn')
+    chatArea = document.querySelector('#chat-area')
+    
+    if (!scrollToBottomBtn || !chatArea) {
+        console.warn('回到底部按钮或聊天区域未找到')
+        return
+    }
+    
+    // 监听聊天区域的滚动事件
+    chatArea.addEventListener('scroll', checkScrollToBottomButton)
+    
+    // 监听回到底部按钮点击
+    scrollToBottomBtn.addEventListener('click', scrollToBottom)
+    
+    // 初始检查一次
+    checkScrollToBottomButton()
+}
+
+// 检查是否需要显示回到底部按钮
+function checkScrollToBottomButton() {
+    if (!chatArea || !scrollToBottomBtn) return
+    
+    const distanceFromBottom = chatArea.scrollHeight - chatArea.scrollTop - chatArea.clientHeight
+    if (distanceFromBottom > SCROLL_TO_BOTTOM_THRESHOLD) {
+        // 距离底部超过阈值，显示按钮
+        scrollToBottomBtn.classList.add('show')
+    } else {
+        // 接近底部，隐藏按钮
+        scrollToBottomBtn.classList.remove('show')
+    }
+}
+
+// 滚动到底部
+function scrollToBottom() {
+    if (!chatArea) return
+    chatArea.scrollTo({
+        top: chatArea.scrollHeight,
+        behavior: 'smooth'
+    })
+}
+
 function ch_del(sessid) {
     const cspdel = document.querySelector('#chat-history-list .csp #csp-del')
     if (cspdel.innerText === `确定吗?`){
@@ -302,6 +351,8 @@ async function load_history(sessid){
                 listen_system()
 
                 chat_main.parentNode.scrollTop = chat_main.parentNode.scrollHeight  // 立即滚动到底
+                // 检查是否显示回到底部按钮
+                setTimeout(() => checkScrollToBottomButton(), 100)
 
             }
             else {
@@ -447,6 +498,8 @@ async function send_msg(userMsgToRollback = null) {
                 assistantDiv.querySelector(".assistant-group").style.display = "flex"
                 update_msg(assistantDiv)
                 sseController = null
+                // 消息完成时检查按钮状态
+                setTimeout(() => checkScrollToBottomButton(), 100)
                 //检查是否存在tools_call
                 const tools_box = assistantDiv.querySelector(".tools-call-box")
                 if (tools_box) {
@@ -575,7 +628,14 @@ async function send_msg(userMsgToRollback = null) {
                 }
 
                 setTimeout(() => {
-                    chat_area.scrollTop = chat_area.scrollHeight
+                    // 只有当用户接近底部（距离底部50px内）时才自动滚动
+                    const scrollThreshold = 50
+                    const distanceFromBottom = chat_area.scrollHeight - chat_area.scrollTop - chat_area.clientHeight
+                    if (distanceFromBottom <= scrollThreshold) {
+                        chat_area.scrollTop = chat_area.scrollHeight
+                    }
+                    // 检查是否显示回到底部按钮
+                    checkScrollToBottomButton()
                 }, 0)
 
             }
@@ -1387,6 +1447,9 @@ function close_setting_box(element){
 
     }
 
+    // 初始化回到底部按钮
+    initScrollToBottomButton()
+
 })()
 
 
@@ -1425,6 +1488,8 @@ sendBtn.onclick = () => {
         update_msg(userDiv)
 
         send_msg(userDiv)  // 传递userDiv，出错时回退这条消息
+        // 发送消息后检查按钮状态（虽然通常会滚动到底部，但确保按钮隐藏）
+        setTimeout(() => checkScrollToBottomButton(), 200)
 
     }
 }
@@ -1651,7 +1716,8 @@ chatIn.addEventListener('click', async function (e) {
             user_box.remove()
 
             await update_msg(userDiv)
-
+            // 编辑消息后检查按钮状态
+            setTimeout(() => checkScrollToBottomButton(), 200)
 
             const chat_main = document.querySelector("#chat-in")
             const find_uuid = chat_main.lastElementChild.dataset.id

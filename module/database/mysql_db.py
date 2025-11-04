@@ -1,7 +1,5 @@
 from mysql.connector import pooling, Error
 from contextlib import contextmanager
-from mysql.connector import cursor_cext
-
 
 #pip install mysql-connector-python
 
@@ -29,6 +27,7 @@ class MySQLDatabaseHandler:
                 port=self.port,
                 connection_timeout=10,
                 ssl_disabled=True,
+                use_pure=True,
             )
             print("✅ MySQL连接池创建成功")
         except Error as e:
@@ -42,7 +41,7 @@ class MySQLDatabaseHandler:
         cursor = None
         try:
             conn = self.connection_pool.get_connection()
-            cursor = conn.cursor(cursor_class=cursor_cext.CMySQLCursorDict)
+            cursor = conn.cursor(dictionary=True)
             yield cursor, conn
         except Error as e:
             error_msg = f"❌ 获取连接或游标失败: {e}"

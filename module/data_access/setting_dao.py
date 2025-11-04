@@ -56,7 +56,7 @@ def change_task_setting_dao(data:dict) -> bool:
 def get_model_dao() -> list:
     db = current_app.db
 
-    sql = "SELECT model_uuid,`system`,model_name,model,base_url,api_key,max_take,temperature,top_p FROM model_menu"
+    sql = "SELECT model_uuid,`system`,model_name,model,base_url,max_take,temperature,top_p FROM model_menu"
     data=db.query(sql)
 
     return data
@@ -68,6 +68,14 @@ def change_model_dao(data:dict) -> bool:
     redis = current_app.redis
     for key in redis.scan_iter('chat_menu:*'):
         redis.delete(key)
+
+    original_api_key = data.get('api_key', '')
+    if not data.get('api_key', '').startswith('sk-'):
+        # 查询数据库中该模型的原有 api_key
+        sql = "SELECT api_key FROM model_menu WHERE model_uuid = %s"
+        result = db.query(sql, (data['model_uuid'],))
+        if result and len(result) > 0:
+            original_api_key = result[0]['api_key']
 
     sql = """INSERT INTO model_menu
     (model_uuid, model_name, model, `system`, max_take, temperature, top_p, base_url, api_key,create_at)
@@ -91,7 +99,7 @@ def change_model_dao(data:dict) -> bool:
         data['temperature'],
         data['top_p'],
         data['base_url'],
-        data['api_key'],
+        original_api_key,
         int(time.time())
     ))
     return True

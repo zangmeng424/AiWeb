@@ -115,7 +115,7 @@ async function ch_edit(sessid) {
                 model_data = response.data.data
                 const chat_model = document.getElementById('chat-model')
                 chat_model.innerHTML = ''
-                response.data.data.forEach(model_son =>{
+                model_data.forEach(model_son =>{
                     const opt = new Option(model_son.model_name, model_son.model_uuid)
                     chat_model.add(opt)
                 })
@@ -953,6 +953,18 @@ function close_setting_box(element){
     document.querySelector("#model-setting").addEventListener("click", async function (e) {
         e.preventDefault()
         const setbox = document.querySelector('.model-setting-box')
+        //初始化
+        setbox.querySelector("#model-uuid").innerText = ""
+        setbox.querySelector("#model").value = ""
+        setbox.querySelector("#system").value = ""
+        setbox.querySelector("#max-take").value = 0
+        setbox.querySelector("#max-take-in").value = 0
+        setbox.querySelector("#temperature").value = 0
+        setbox.querySelector("#temperature-in").value = 0
+        setbox.querySelector("#top-p").value = 0
+        setbox.querySelector("#top-p-in").value = 0
+        setbox.querySelector("#base-url").value = ""
+        setbox.querySelector("#api-key").value = ""
         open_setting_box(document.querySelector('.model-setting-box'))
         let model_data = []
         await axios.get('/api/setting/model')
@@ -963,10 +975,11 @@ function close_setting_box(element){
                     model_data = response.data.data
                     const chat_model = document.getElementById('model-name-list')
                     chat_model.innerHTML = ''
-                    response.data.data.forEach(model_son => {
+                    model_data.forEach(model_son => {
                         const opt = document.createElement('option')
                         opt.value = model_son.model_name
                         chat_model.appendChild(opt)
+                        model_son.api_key = localStorage.getItem(model_son.model_uuid)||"非配置设备,内容被隐藏"
                     })
                 } else {
                     console.log(response.data.msg)
@@ -982,6 +995,7 @@ function close_setting_box(element){
         const model_name = document.getElementById('model-name')
         await model_name.addEventListener('change', function (e) {
             console.log('选择已更改，当前值：', e.target.value)
+            setbox.querySelector("#model-uuid").innerText = ""
             model_data.forEach(model_son => {
                 if (e.target.value === model_son.model_name) {
                     setbox.querySelector("#model-uuid").innerText = model_son.model_uuid
@@ -995,10 +1009,7 @@ function close_setting_box(element){
                     setbox.querySelector("#top-p-in").value = model_son.top_p
                     setbox.querySelector("#base-url").value = model_son.base_url
                     setbox.querySelector("#api-key").value = model_son.api_key
-                } else {
-                    setbox.querySelector("#model-uuid").innerText = ""
                 }
-
             })
         })
     })

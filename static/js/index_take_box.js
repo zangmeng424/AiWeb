@@ -129,6 +129,7 @@ function model_setting_save() {
             console.log(response.data)
             if (response.data.code === 1) {
                 console.log(response.data.msg)
+                localStorage.setItem(setbox.querySelector("#model-uuid").innerText, setbox.querySelector("#api-key").value)
                 alert(response.data.msg)
             } else {
                 console.log(response.data.msg)

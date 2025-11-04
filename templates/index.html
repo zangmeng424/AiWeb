@@ -26,7 +26,7 @@
 
 <body>
 
-    <div class="global-setting-box" style="display: none; user-select: none;">
+    <div class="global-setting-box" style="display: none; user-select: none; width: 500px">
         <h2>全局设置</h2>
         <div id="chatset" style="flex-direction: column;">
             <div class="global-options-checkbox">
@@ -267,15 +267,15 @@
                 请输入服务器配置JSON（示例格式）：
             </div>
             <div style="margin-bottom: 15px; padding: 10px; background: #f5f5f5; border-radius: 5px; font-size: 12px; font-family: monospace; color: #333; box-sizing: border-box;">
-{<br>
-&nbsp;&nbsp;"server-name": {<br>
-&nbsp;&nbsp;&nbsp;&nbsp;"command": "uvx",<br>
-&nbsp;&nbsp;&nbsp;&nbsp;"args": ["mcp-shell-server"],<br>
-&nbsp;&nbsp;&nbsp;&nbsp;"env": {<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"KEY": "value"<br>
-&nbsp;&nbsp;&nbsp;&nbsp;}<br>
-&nbsp;&nbsp;}<br>
-}
+                {<br>
+                &nbsp;&nbsp;"server-name": {<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;"command": "uvx",<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;"args": ["mcp-shell-server"],<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;"env": {<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"KEY": "value"<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;}<br>
+                &nbsp;&nbsp;}<br>
+                }
             </div>
             <textarea id="mcp-server-json" placeholder='输入JSON配置...' 
                 style="width: 100%; height: 200px; padding: 10px; border: 1px solid #ccc; border-radius: 5px; font-family: monospace; font-size: 13px; resize: none; box-sizing: border-box;"></textarea>
@@ -340,9 +340,12 @@
             <a id="mcpserver-setting" class="sidebar-btn-hover sidebar-entry" href="/mcpserver">
                 <div class="sidebar-entry-svg">
                     <svg width="20" height="20" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M24 4L29 14H39L31 21L34 32L24 26L14 32L17 21L9 14H19L24 4Z" fill="none" stroke="#000000" stroke-width="3" stroke-linejoin="round"/>
-                        <circle cx="24" cy="38" r="4" fill="none" stroke="#000000" stroke-width="3"/>
-                        <path d="M24 34V26" stroke="#000000" stroke-width="3" stroke-linecap="round"/>
+                        <path d="M24 33V15" stroke="#000000" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                        <rect x="10" y="9" width="28" height="6" fill="none" stroke="#000000" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M8 32L14 25H33.9743L40 32" stroke="#000000" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                        <rect x="4" y="33" width="8" height="8" fill="none" stroke="#000000" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                        <rect x="20" y="33" width="8" height="8" fill="none" stroke="#000000" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                        <rect x="36" y="33" width="8" height="8" fill="none" stroke="#000000" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
                     </svg>
                 </div>
                 <div style="padding-left: 8px;"></div>
@@ -387,9 +390,8 @@
             <div id="input-area">
                 <!-- 回到底部按钮 -->
                 <button id="scroll-to-bottom-btn">
-                    <svg width="24" height="24" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M24 44V4" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-                        <path d="M36 32L24 44L12 32" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                    <svg width="20" height="20" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M36 18L24 30L12 18" stroke="#000000" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
                     </svg>
                 </button>
                 <textarea id="chat-input" placeholder="请输入问题..." maxlength="1000"></textarea>

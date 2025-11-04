@@ -21,11 +21,11 @@ def create_app():
     app.kb = LocalKnowledgeBase()
     app.client = MCPClient()
 
-    # ✅ 创建一个持久异步循环，不关闭
+    # 创建一个持久异步循环，不关闭
     app.loop = asyncio.new_event_loop()
     threading.Thread(target=lambda: app.loop.run_forever(), daemon=True).start()
 
-    # ✅ 通过线程安全方式启动 MCP 连接，不再关闭 loop
+    # 通过线程安全方式启动 MCP 连接，不再关闭 loop
     asyncio.run_coroutine_threadsafe(app.client.connect_to_servers(), app.loop)
 
     register_blueprints(app)

@@ -1,6 +1,8 @@
 import asyncio
 import json
 import time
+
+from loguru import logger
 from openai.types.chat import ChatCompletionChunk
 from openai import Stream
 from flask import current_app
@@ -44,8 +46,30 @@ def chat_dao(session_id: str, messages: list[dict], db, client,kb, loop, redis,o
             #拼接本地知识库
             messages[-1]["content"] = f"来源本地知识库：\n {kb.search(user_msg)}\n\n"+user_msg
 
+            asyncio.run(ai_update_repository_dao(model=model, base_url=base_url, api_key=api_key, user_msg=user_msg,kb=kb))
+
     return openai_tmp(temperature=temperature,top_p=top_p,model=model,base_url=base_url,api_key=api_key,messages=messages,tools=tools)
 
+async def ai_update_repository_dao(model: str, base_url: str, api_key: str, user_msg: str,kb):
+    messages=[{
+        "role": "system",
+        "content":"请判断用户消息是否包含可长期保存的知识或偏好设定, 如果有, 请提取出来并以List[json]格式返回:[{'intent': 'add' | 'delete','key_info': '...'}]"
+    }, {
+        "role": "user",
+        "content": user_msg
+    }]
+    resp=openai_tmp(temperature=0, top_p=1, model=model, base_url=base_url, api_key=api_key, messages=messages,stream=False)
+    try:
+        repo_info=json.loads(resp.choices[0].message.content)
+        logger.info(f"AI 知识库更新结果:\n{repo_info}")
+        for repo_item in repo_info:
+            if repo_item["intent"] == "add":
+                kb.add(repo_item["key_info"])
+            elif repo_item["intent"] == "delete":
+                kb.delete(repo_item["key_info"])
+
+    except Exception:
+        logger.exception("知识库更新失败")
 
 def get_history_dao(session_id:str) -> json:
     db = current_app.db

@@ -103,6 +103,7 @@ class LocalKnowledgeBase:
                     result.append(text)
 
         if '' in result:
-            result = result[:result.index('')]
+            #result = result[:result.index('')]
+            result = [text for text in result if text != '']
 
         return result

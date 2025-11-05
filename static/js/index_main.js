@@ -1490,6 +1490,7 @@ sendBtn.onclick = () => {
         userDiv.querySelector(".content").innerText = text
         document.querySelector("#chat-in").appendChild(userDiv)
         chatInput.value = ""
+        chatInput.style = "height: 63px;"
         //顺滑滚动到底部
         document.querySelector("#chat-area").scrollTo({
             top: document.querySelector("#chat-area").scrollHeight,

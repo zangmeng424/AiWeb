@@ -182,10 +182,90 @@ async function ch_edit(sessid) {
 }
 
 function ch_put(sessid) {
-    //TODO
-    //导出对话
+    const currentSessionId = localStorage.getItem('lastsessid')
+    if (!currentSessionId) {
+        alert('未找到当前会话记录，无法导出。')
+        return
+    }
 
-    alert(sessid)
+    if (sessid !== currentSessionId) {
+        alert('请先打开该会话后再导出。')
+        return
+    }
+
+    const chatContainer = document.querySelector('#chat-in')
+    if (!chatContainer) {
+        alert('未找到对话内容，无法导出。')
+        return
+    }
+
+    const lines = []
+
+    const systemContent = chatContainer.querySelector('.c-system .content')
+    if (systemContent) {
+        const systemText = systemContent.innerText.trim()
+        if (systemText) {
+            lines.push('###system', systemText, '', '')
+        }
+    }
+
+    const messageNodes = Array.from(chatContainer.querySelectorAll('.c-user, .c-assistant'))
+
+    messageNodes.forEach(node => {
+        const contentNode = node.querySelector('.content')
+        const contentText = contentNode ? contentNode.innerText.trim() : ''
+
+        if (contentText) {
+            const role = node.classList.contains('c-user') ? 'user' : 'assistant'
+            lines.push(`###${role}`, contentText, '', '')
+        }
+
+        const toolBox = node.querySelector('.tools-call-box')
+        if (toolBox) {
+            const callId = toolBox.querySelector('.tools-call-id .tools-content')?.innerText.trim()
+            const callName = toolBox.querySelector('.tools-call-name .tools-content')?.innerText.trim()
+            const callArgs = toolBox.querySelector('.tools-call-params .tools-content')?.innerText.trim()
+            const callReturn = toolBox.querySelector('.tools-call-return .tools-content')?.innerText.trim()
+
+            const toolLines = []
+            if (callId) toolLines.push(`id: ${callId}`)
+            if (callName) toolLines.push(`name: ${callName}`)
+            if (callArgs) toolLines.push(`arguments: ${callArgs}`)
+            if (callReturn) toolLines.push(`return: ${callReturn}`)
+
+            if (toolLines.length) {
+                lines.push('###tool',  toolLines.join('\n'), '', '')
+            }
+        }
+
+
+
+
+
+    })
+
+    const textContent = lines.join('\n')
+    if (!textContent.trim()) {
+        alert('当前对话为空，未生成导出内容。')
+        return
+    }
+    let chat_task_name = ""
+    document.querySelectorAll("#chat-history-list a").forEach(chat_a => {
+        if (chat_a.dataset.id === sessid) {
+            chat_task_name = chat_a.querySelector(".sidebar-entry-txt").innerText
+        }
+    })
+    const filename = `${chat_task_name}.txt`
+    const blob = new Blob([textContent], {type: 'text/plain;charset=utf-8'})
+    const downloadLink = document.createElement('a')
+    downloadLink.href = URL.createObjectURL(blob)
+    downloadLink.download = filename
+    document.body.appendChild(downloadLink)
+    downloadLink.click()
+    document.body.removeChild(downloadLink)
+    setTimeout(() => {
+        URL.revokeObjectURL(downloadLink.href)
+    }, 2000)
 }
 
 
@@ -202,7 +282,7 @@ function listen_system(){
         if (system_content.innerText !== oldContent) {
             console.log('system内容已更改:', system_content.innerText)
             axios.post("/api/setting/system",{
-                session_id: window.location.pathname.split('/').filter(Boolean).pop(),
+                session_id: localStorage.getItem('lastsessid'),
                 system: system_content.innerText
             })
                 .then(response => {
@@ -257,7 +337,7 @@ async function load_history(sessid){
 
                         chat_main.prepend(user_node)
                     }
-                    else if (item.role === "assistant") {
+                    else if (item.role === "assistant" || "tool") {
                         const assistant_node = copy_assistant.cloneNode(true)
 
                         last_msg_id = item.parent_id
@@ -273,7 +353,7 @@ async function load_history(sessid){
 
                         assistant_node.dataset.id = find_uuid
                         //加载工具显示
-                        if ("tool_return" in item) {
+                        if (item.tool_return) {
                             //将工具响应数据存在字典内备用
                             tools_menu[item.tool_return.tool_call_id] = item.tool_return.content
                         }
@@ -425,8 +505,7 @@ async function send_msg(userMsgToRollback = null) {
     const signal = sseController.signal
 
     //获取对话信息
-    const path = window.location.pathname
-    const session_id = path.split('/').filter(Boolean).pop()
+    const session_id = localStorage.getItem('lastsessid')
     //加载历史对话
     const max_take = Number(document.querySelector("#chat-area #max-take-now").value)
     const task_data = []
@@ -539,6 +618,8 @@ async function send_msg(userMsgToRollback = null) {
                                 console.error('请求出错:', error)
                             })
                     })
+                    if (localStorage.getItem('on_auto_tools') !== 'false')
+                        tools_box.querySelector(".btn-confirm").click()
                 }
 
             }
@@ -658,8 +739,7 @@ async function update_msg(element){
         console.error("参数不是一个有效的HTML元素")
         return
     }
-    const path = window.location.pathname
-    const session_id = path.split('/').filter(Boolean).pop()
+    const session_id = localStorage.getItem('lastsessid')
 
     const msg = {
         session_id: session_id,
@@ -839,7 +919,7 @@ async function update_task_list(){
                             else{
                                     session_id = e.target.dataset.id
                                 }
-                            const old_session_id = window.location.pathname.split('/').filter(Boolean).pop()
+                            const old_session_id = localStorage.getItem('lastsessid')
                             if (old_session_id !== session_id){//防止重复加载
                                 const old_tasking = e.target.closest('#chat-history-list').querySelectorAll(".tasking")
                                 old_tasking.forEach(div => {
@@ -874,7 +954,7 @@ async function add_new_task(){
 
     return axios.get('/api/task/add',{
             params: {
-                session_id:window.location.pathname.split('/').filter(Boolean).pop()
+                session_id:session_id
             }
         })
         .then(response => {
@@ -955,6 +1035,7 @@ function close_setting_box(element){
         const setbox = document.querySelector('.model-setting-box')
         //初始化
         setbox.querySelector("#model-uuid").innerText = ""
+        setbox.querySelector('#model-name').value = ""
         setbox.querySelector("#model").value = ""
         setbox.querySelector("#system").value = ""
         setbox.querySelector("#max-take").value = 0
@@ -1440,23 +1521,23 @@ function close_setting_box(element){
     await update_task_list()
 
     if (window.location.pathname.split('/').filter(Boolean).pop()) {
-        const path = window.location.pathname
-        const session_id = path.split('/').filter(Boolean).pop()
-        const chat_menu = document.querySelectorAll("#chat-history-list a")
-        chat_menu.forEach(chat => {
-            if (chat.href.split('/').filter(Boolean).pop() === session_id)
-                chat.classList.add('tasking')
-        })
-
-        load_history(session_id)
+        load_history(localStorage.getItem('lastsessid'))
     } else {
         const lastsessid = localStorage.getItem('lastsessid')
         if (lastsessid) {
             history.pushState(null, '', `/chat/${lastsessid}`)
             load_history(lastsessid)
         }
-
     }
+
+    //初始化选中对话特殊显示
+    const path = window.location.pathname
+    const session_id = path.split('/').filter(Boolean).pop()
+    const chat_menu = document.querySelectorAll("#chat-history-list a")
+    chat_menu.forEach(chat => {
+        if (chat.href.split('/').filter(Boolean).pop() === session_id)
+            chat.classList.add('tasking')
+    })
 
     // 初始化回到底部按钮
     initScrollToBottomButton()

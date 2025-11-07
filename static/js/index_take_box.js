@@ -52,8 +52,9 @@ bindSlider(".model-setting-box #top-p", ".model-setting-box #top-p-in")
 
 function chatset_save() {
     const setbox = document.querySelector('.setting-box')
+    const session_id = setbox.querySelector("#session-id").value
     axios.post('/api/setting/task', {
-        session_id: setbox.querySelector("#session-id").value,
+        session_id: session_id,
         task_name: setbox.querySelector("#task-name").value,
         system: setbox.querySelector("#system").value,
         avatar: setbox.querySelector('#displayImage').src,
@@ -67,7 +68,18 @@ function chatset_save() {
             console.log(response.data)
             if (response.data.code === 1) {
                 alert(response.data.msg)
-                location.reload(true)
+                //局部修改
+                document.querySelectorAll("#chat-history-list a").forEach(chat_a => {
+                    if (chat_a.dataset.id === session_id) {
+                        chat_a.querySelector(".sidebar-entry-txt").innerText = setbox.querySelector("#task-name").value
+                    }
+                })
+                //检查当前对话是否为修改对话
+                if (localStorage.getItem('lastsessid') === session_id){
+                    document.querySelector("#chat-in .c-system .content").innerText = setbox.querySelector("#system").value
+                    document.querySelector("#chat-area #max-take-now").value = setbox.querySelector("#max-take-in").value
+                }
+
             } else {
                 console.log(response.data.msg)
                 alert(response.data.msg)

@@ -101,7 +101,7 @@ def get_history_dao(session_id:str) -> json:
     if history_data:
         for data_c in history_data:
             if data_c["role"] == "tool":
-                if data_c.get("chat_uuid"):
+                if rt_data["data"].get(data_c["chat_uuid"]):
                     rt_data["data"][data_c["chat_uuid"]]["tool_return"] = json.loads(data_c["metadata"])
             else:
                 rt_data["data"][data_c["chat_uuid"]]={

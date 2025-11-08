@@ -303,6 +303,7 @@
     font-family: monospace;
     white-space: pre-wrap;
     margin-top: 4px;
+    overflow-x: auto;
 }
 
 .tools-call-id {

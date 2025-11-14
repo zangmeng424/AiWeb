@@ -26,7 +26,7 @@
 
 <body>
 
-    <div class="global-setting-box" style="display: none; user-select: none; width: 500px">
+    <div class="global-setting-box" style="display: none; user-select: none; max-width: 500px;  width: 95%;">
         <h2>全局设置</h2>
         <div id="chatset" style="flex-direction: column;">
             <div class="global-options-checkbox">
@@ -39,11 +39,27 @@
             </div>
             <div class="global-options-checkbox">
                 <label class="switch">
+                  <input type="checkbox" id="mermaid-check">
+                  <span class="slider">
+                  </span>
+                </label>
+                Mermaid图表渲染（需要Markdown渲染）
+            </div>
+            <div class="global-options-checkbox">
+                <label class="switch">
                   <input type="checkbox" id="moreinfo-check">
                   <span class="slider">
                   </span>
                 </label>
                 显示消息的token信息
+            </div>
+            <div class="global-options-checkbox">
+                <label class="switch">
+                  <input type="checkbox" id="auto-title-check">
+                  <span class="slider">
+                  </span>
+                </label>
+                新对话自动生成标题
             </div>
             <div class="global-options-checkbox">
                 <label class="switch">
@@ -240,7 +256,7 @@
         </div>
     </div>
 
-    <div class="knowledge-setting-box" style="display: none;height: 500px;width: 450px;">
+    <div class="knowledge-setting-box" style="display: none;height: 500px;max-width: 450px; width: 95%;">
         <h2>知识库设置</h2>
         <div id="chatset" style="flex-direction: column;overflow-y: auto;">
             <div class="knowledge—list"> <div class="knowledge—list-content">1+1=2！</div> <button id="setbox-del">删除</button></div>
@@ -254,7 +270,7 @@
         </div>
     </div>
 
-    <div class="mcpserver-setting-box" style="display: none;height: 600px;width: 800px;">
+    <div class="mcpserver-setting-box" style="display: none;height: 600px;max-width: 800px; width: 95%;">
         <h2>McpServers设置</h2>
         <div id="chatset" style="flex-direction: column;overflow-y: auto;padding-bottom: 10px;">
             <div id="mcp-tools-list">
@@ -268,7 +284,7 @@
         </div>
     </div>
 
-    <div class="mcp-add-server-box" style="display: none;height: 500px;width: 700px;">
+    <div class="mcp-add-server-box" style="display: none;height: 500px;max-width: 700px; width: 95%;">
         <h2>添加McpServers</h2>
         <div id="chatset" style="flex-direction: column;padding: 20px;padding-bottom: 80px;overflow-y: auto;overflow-x: hidden;">
             <div style="margin-bottom: 10px; color: #666; font-size: 13px;">
@@ -561,6 +577,11 @@
             </div>
         </div>
 
+        <div class="loading-dots">
+            <div class="dot"></div>
+            <div class="dot"></div>
+            <div class="dot"></div>
+        </div>
     </div>
 
     <div id="tips"></div>

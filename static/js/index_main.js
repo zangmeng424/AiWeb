@@ -1,7 +1,6 @@
 import {fetchEventSource} from "/static/js/fetch-event-source.js"
 import { marked } from "/static/js/marked.js"
 
-
 let msg_list = {} //全局消息列表，存储当前加载对话的所有对话内容，及之后更新的新消息
 let tools_menu = {}
 const chatInput = document.querySelector('#chat-input')
@@ -11,6 +10,216 @@ const tooltip = document.getElementById('tips')
 const chatIn = document.getElementById('chat-in')
 let sseController = null  // SSE 全局控制器
 let last_assistant_yuan =""
+
+const MERMAID_CDN_URL = "/static/js/mermaid.js"
+let mermaidLoadPromise = null
+let mermaidInitialized = false
+
+function isMarkdownEnabled() {
+    return localStorage.getItem('on_markdown') !== 'false'
+}
+
+function isMermaidEnabled() {
+    return localStorage.getItem('on_mermaid') !== 'false'
+}
+
+function initializeMermaidDefaults() {
+    if (mermaidInitialized || !window.mermaid) return
+    window.mermaid.initialize({
+        startOnLoad: false,
+        theme: 'default',
+        flowchart: {
+            useMaxWidth: true,
+            htmlLabels: true,
+            curve: 'basis'
+        }
+    })
+    mermaidInitialized = true
+}
+
+function ensureMermaidReady() {
+    if (window.mermaid) {
+        initializeMermaidDefaults()
+        return Promise.resolve(window.mermaid)
+    }
+
+    if (!mermaidLoadPromise) {
+        mermaidLoadPromise = new Promise((resolve, reject) => {
+            const script = document.createElement('script')
+            script.src = MERMAID_CDN_URL
+            script.async = true
+            script.onload = () => {
+                try {
+                    initializeMermaidDefaults()
+                    resolve(window.mermaid)
+                } catch (err) {
+                    reject(err)
+                }
+            }
+            script.onerror = err => reject(err)
+            document.head.appendChild(script)
+        }).catch(err => {
+            console.error('Mermaid 脚本加载失败:', err)
+            mermaidLoadPromise = null
+            throw err
+        })
+    }
+
+    return mermaidLoadPromise
+}
+
+function renderMermaidBlocks(container) {
+    if (!container || !isMermaidEnabled()) return
+    const codeBlocks = container.querySelectorAll('pre code.language-mermaid, pre code.lang-mermaid')
+    if (!codeBlocks.length) return
+
+    const placeholders = []
+    codeBlocks.forEach(codeBlock => {
+        const pre = codeBlock.closest('pre')
+        if (!pre || pre.dataset.mermaidProcessed === 'true') return
+        const chartDefinition = codeBlock.textContent.trim()
+        if (!chartDefinition) return
+
+        const mermaidDiv = document.createElement('div')
+        mermaidDiv.className = 'mermaid'
+        mermaidDiv.textContent = chartDefinition
+
+        pre.dataset.mermaidProcessed = 'true'
+        pre.replaceWith(mermaidDiv)
+        placeholders.push(mermaidDiv)
+    })
+
+    if (!placeholders.length) return
+
+    ensureMermaidReady()
+        .then(mermaidLib => {
+            requestAnimationFrame(() => {
+                try {
+                    mermaidLib.init(undefined, placeholders)
+                } catch (err) {
+                    console.error('Mermaid 渲染失败:', err)
+                }
+            })
+        })
+        .catch(err => {
+            console.error('Mermaid 加载失败:', err)
+        })
+}
+
+function renderAssistantContent(targetElement, rawContent = '', options = {}) {
+    if (!(targetElement instanceof HTMLElement)) return
+    const useMarkdown = isMarkdownEnabled()
+    const useMermaid = isMermaidEnabled()
+    const content = typeof rawContent === 'string' ? rawContent : ''
+    const skipMermaid = options.skipMermaid
+
+    if (useMarkdown) {
+        targetElement.innerHTML = marked.parse(content)
+        if (!skipMermaid && useMermaid) {
+            renderMermaidBlocks(targetElement)
+        }
+    } else {
+        targetElement.innerText = content
+    }
+}
+
+async function auto_ai_title(user_msg){
+    const session_id = localStorage.getItem('lastsessid')
+    let chat_title = NaN;
+    fetchEventSource("/api/chat", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({session_id: session_id,on_tools:false,on_knowledge:false,
+            data:[
+                {
+                    "role": "system",
+                    "content": "扮演标题生成器，总结用户消息，生成一个10个字以内的对话标题"
+                },
+                {
+                    "role": "user",
+                    "content": "用户消息:"+user_msg
+                }
+            ]
+        }),
+        onopen(response) {
+            if (response.ok && response.status === 200) return;
+            throw new Error("非正常响应，终止连接");
+        },
+        onmessage(ev) {
+            if (ev.event === "start") {
+                document.querySelectorAll("#chat-history-list .sidebar-entry").forEach(chat_a => {
+                    if (chat_a.dataset.id === session_id) {
+                        chat_title = chat_a.querySelector(".sidebar-entry-txt")
+                        chat_title.innerText = ""
+                    }
+                })
+            }
+            else if (ev.event === "finish"){
+                axios.get('/api/setting/task', {
+                    params: {
+                        session_id: session_id,
+                    }
+                })
+                .then(response => {
+                    // 获取返回的 JSON 数据
+                    console.log(response.data)
+                    if (response.data.code === 1) {
+                        axios.post('/api/setting/task', {
+                            session_id: session_id,
+                            task_name: chat_title.innerText,
+                            system: response.data.data.system,
+                            avatar: response.data.data.avatar ? response.data.data.avatar : "",
+                            model: response.data.data.model,
+                            max_take: response.data.data.max_take,
+                            temperature: response.data.data.temperature,
+                            top_p: response.data.data.top_p,
+                            })
+                            .then(response => {
+                                // 获取返回的 JSON 数据
+                                console.log(response.data)
+                                if (response.data.code === 1) {
+
+                                } else {
+                                    console.log(response.data.msg)
+                                    alert(response.data.msg)
+                                }
+                            })
+                            .catch(error => {
+                                // 如果有错误则输出到控制台
+                                console.error('请求出错:', error)
+                            })
+
+
+
+
+
+                    } else {
+                        console.log(response.data.msg)
+                        alert(response.data.msg)
+                    }
+                })
+                .catch(error => {
+                    // 如果有错误则输出到控制台
+                    console.error('请求出错:', error)
+                })
+            }
+            else{
+                const data = JSON.parse(ev.data)
+                if (data.choices?.[0]?.delta?.content){
+                    chat_title.innerText += data.choices[0].delta.content
+                }
+
+            }
+        },
+        onerror(err) {
+            console.log("\nSSE[出错] " + err + "\n")
+            throw err;
+        }
+    });
+
+
+
+}
 
 // 回到底部按钮配置
 const SCROLL_TO_BOTTOM_THRESHOLD = 800 // 距离底部多少像素时显示按钮
@@ -341,10 +550,7 @@ async function load_history(sessid){
                         const assistant_node = copy_assistant.cloneNode(true)
 
                         last_msg_id = item.parent_id
-                        if (localStorage.getItem('on_markdown') !== 'false')
-                            assistant_node.querySelector(".content").innerHTML =  marked.parse(item.content)
-                        else
-                            assistant_node.querySelector(".content").innerText =  item.content
+                        renderAssistantContent(assistant_node.querySelector(".content"), item.content)
                         if(item.more_info){
                             assistant_node.querySelector(".assistant-more-info").innerText = `used tokens:${item.more_info.used_token ? item.more_info.used_token : NULL}, model:${item.more_info.model ? item.more_info.model : NULL}`
                             if (! (localStorage.getItem("on_moreinfo") !== 'false'))
@@ -572,8 +778,10 @@ async function send_msg(userMsgToRollback = null) {
         onmessage(ev) {
             if (ev.event === "start") {
                 document.querySelector("#chat-in").appendChild(assistantDiv)
+                assistantDiv.querySelector(".content").appendChild(document.querySelector("#source .loading-dots").cloneNode(true))
             }
             else if (ev.event === "finish") {
+                renderAssistantContent(assistantDiv.querySelector(".content"), last_assistant_yuan)
                 assistantDiv.querySelector(".assistant-group").style.display = "flex"
                 update_msg(assistantDiv)
                 sseController = null
@@ -678,16 +886,13 @@ async function send_msg(userMsgToRollback = null) {
                 }
             }
             else {
+
                 //拼接AI信息
                 const data = JSON.parse(ev.data)
                 if (data.choices?.[0]?.delta?.content) {
                     // 修改这里：累积文本并实时渲染markdown
                     last_assistant_yuan += data.choices[0].delta.content
-                    if (localStorage.getItem('on_markdown') !== 'false')
-                        assistantDiv.querySelector(".content").innerHTML =  marked.parse(last_assistant_yuan)
-                    else
-                        assistantDiv.querySelector(".content").innerText =  last_assistant_yuan
-
+                    renderAssistantContent(assistantDiv.querySelector(".content"), last_assistant_yuan, {skipMermaid: true})
                 }
                 else if (data.choices?.[0]?.delta?.tool_calls) {
                     if (data.choices[0].delta.tool_calls[0].id) {
@@ -1579,7 +1784,10 @@ sendBtn.onclick = () => {
         })
 
         update_msg(userDiv)
-
+        // 自动标题
+        if(document.querySelector("#chat-in").children.length <= 3 && localStorage.getItem('on_auto_title') !== 'false'){
+            auto_ai_title(text)
+        }
         send_msg(userDiv)  // 传递userDiv，出错时回退这条消息
         // 发送消息后检查按钮状态（虽然通常会滚动到底部，但确保按钮隐藏）
         setTimeout(() => checkScrollToBottomButton(), 200)
@@ -1664,10 +1872,7 @@ chatIn.addEventListener('click', async function (e) {
                     chat_main.appendChild(user_node)
                 } else if (msg_list[check_id].role === "assistant") {
                     const assistant_node = copy_assistant.cloneNode(true)
-                    if (localStorage.getItem('on_markdown') !== 'false')
-                        assistant_node.querySelector(".content").innerHTML =  marked.parse(msg_list[check_id].content)
-                    else
-                        assistant_node.querySelector(".content").innerText = msg_list[check_id].content
+                    renderAssistantContent(assistant_node.querySelector(".content"), msg_list[check_id].content)
                     if(msg_list[check_id].more_info)
                         assistant_node.querySelector(".assistant-more-info").innerText = `used tokens:${msg_list[check_id].more_info.used_token ? msg_list[check_id].more_info.used_token : NULL}, model:${msg_list[check_id].more_info.model ? msg_list[check_id].more_info.model : NULL}`
                     if (! (localStorage.getItem("on_moreinfo") !== 'false'))

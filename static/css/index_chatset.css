@@ -8,7 +8,6 @@
 }
 .slider-box {
     display: flex;
-    align-items: center;
     gap: 10px;
 }
 .slider-box input[type="number"] {
@@ -43,8 +42,9 @@
     transform: translate(-50%, -50%);
     /* 把元素自身宽高的一半向上和向左移动，实现真正居中 */
     z-index: 1003;
-    height: 450px;
-    width: 700px;
+    min-height: 450px;
+    max-width: 700px;
+    width: 95%;
     padding: 22px 24px;
     border-radius: 24px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
@@ -193,7 +193,8 @@ body.mask::before {
 
 .knowledge—list{
     display: flex;
-    width: 400px;
+    max-width: 400px;
+    width: 90%;
     align-items: center;
     padding: 8px 0 8px 30px;
     margin-bottom: 5px;

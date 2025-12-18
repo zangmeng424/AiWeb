@@ -1791,15 +1791,17 @@ sendBtn.onclick = () => {
         send_msg(userDiv)  // 传递userDiv，出错时回退这条消息
         // 发送消息后检查按钮状态（虽然通常会滚动到底部，但确保按钮隐藏）
         setTimeout(() => checkScrollToBottomButton(), 200)
-        sendBtn.classList.toggle('stoptype')
+        sendBtn.classList.add('stoptype')
         sendBtn.innerHTML = '<svg width="20" height="20" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="6" y="6" width="36" height="36" rx="3" fill="none" stroke="#ffffff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>'
     }
     else if(sendBtn.classList.contains('stoptype')){
-        sendBtn.classList.toggle('stoptype')
+        sendBtn.classList.remove('stoptype')
         sendBtn.innerHTML = '<svg width="20" height="20" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M24 6V42" stroke="#ffffff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></path><path d="M12 18L24 6L36 18" stroke="#ffffff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></path></svg>'
         sseController.abort()
         const assistant_boxs = document.querySelectorAll('#chat-in .c-assistant')
         const assistant_box = assistant_boxs[assistant_boxs.length - 1]
+        renderAssistantContent(assistant_box.querySelector(".content"), last_assistant_yuan)
+        assistant_box.querySelector(".assistant-group").style.display = "flex"
         //将中断的ai回复同步服务器
         update_msg(assistant_box)
         setTimeout(() => {
@@ -1959,6 +1961,9 @@ chatIn.addEventListener('click', async function (e) {
             next = tmp // 继续
         }
         chat_box.remove() // 最后删除自身
+        setTimeout(() => checkScrollToBottomButton(), 200)
+        sendBtn.classList.add('stoptype')
+        sendBtn.innerHTML = '<svg width="20" height="20" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="6" y="6" width="36" height="36" rx="3" fill="none" stroke="#ffffff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>'
 
         await send_msg(null)  // try-again不需要回退，用户消息已存在
 
@@ -2056,6 +2061,9 @@ chatIn.addEventListener('click', async function (e) {
                     }
                 }
             }
+            setTimeout(() => checkScrollToBottomButton(), 200)
+            sendBtn.classList.add('stoptype')
+            sendBtn.innerHTML = '<svg width="20" height="20" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="6" y="6" width="36" height="36" rx="3" fill="none" stroke="#ffffff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>'
 
             await send_msg(userDiv)  // 传递userDiv，出错时回退这条消息
 

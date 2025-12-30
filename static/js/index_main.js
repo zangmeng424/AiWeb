@@ -5,7 +5,6 @@ let msg_list = {} //全局消息列表，存储当前加载对话的所有对话
 let tools_menu = {}
 const chatInput = document.querySelector('#chat-input')
 const sendBtn = document.querySelector('#send-btn')
-const MAX_LENGTH = 1000
 const tooltip = document.getElementById('tips')
 const chatIn = document.getElementById('chat-in')
 let sseController = null  // SSE 全局控制器
@@ -1752,10 +1751,6 @@ function close_setting_box(element){
 
 // 自动高度调整和长度限制
 chatInput.addEventListener('input', function () {
-    // 限制最大长度
-    if (this.value.length > MAX_LENGTH) {
-        this.value = this.value.slice(0, MAX_LENGTH)
-    }
     // 限制最大高度
     this.style.height = 'auto'
     if (this.scrollHeight <= 320) {

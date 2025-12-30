@@ -9,4 +9,6 @@ package-lock.json
 *.pkl
 test.html
 test-*.py
-config_*.py
+/pyproject.toml
+/.*
+/uv.lock

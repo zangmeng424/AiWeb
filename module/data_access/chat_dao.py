@@ -44,7 +44,7 @@ def chat_dao(session_id: str, messages: list[dict], db, client,kb, loop, redis,o
         user_msg = messages[-1]["content"]
         if on_knowledge:
             #拼接本地知识库
-            messages[-1]["content"] = f"来源本地知识库：\n {kb.search(user_msg)}\n\n"+user_msg
+            messages[-1]["content"] = f"来源本地知识库查询：\n {kb.search(user_msg)}\n\n用户消息：\n{user_msg}"
 
             asyncio.run(ai_update_repository_dao(model=model, base_url=base_url, api_key=api_key, user_msg=user_msg,kb=kb))
 
@@ -53,10 +53,10 @@ def chat_dao(session_id: str, messages: list[dict], db, client,kb, loop, redis,o
 async def ai_update_repository_dao(model: str, base_url: str, api_key: str, user_msg: str,kb):
     messages=[{
         "role": "system",
-        "content":"请判断用户消息是否包含可长期保存的知识或偏好设定, 如果有, 请提取出来并以List[json]格式返回:[{'intent': 'add' | 'delete','key_info': '...'}]"
+        "content":"你是一个知识库更新程序，请判断用户消息中是否包含可长期保存的知识记忆或偏好设定, 如果有, 请提取出来并以List[json]格式返回:[{'intent': 'add' | 'delete','key_info': '...'}] 。遵守以下规则作为前提 1.key_info数据不能超过80个字符 2.非用户明确修改需求的前提下，仅保存重要知识或记忆 3.若无重要信息请返回空列表"
     }, {
         "role": "user",
-        "content": user_msg
+        "content": f"来源本地知识库查询：\n {kb.search(user_msg)}\n\n用户消息：\n{user_msg}"
     }]
     resp=openai_tmp(temperature=0, top_p=1, model=model, base_url=base_url, api_key=api_key, messages=messages,stream=False)
     try:

@@ -4,9 +4,9 @@ import time
 from flask import current_app
 
 
-def list_dao() -> dict:
+def list_dao(task_id:int) -> dict:
     db = current_app.db
-    sql = "SELECT id, session_id, title FROM chat_menu WHERE status = '1' ORDER BY create_at DESC"
+    sql = f"SELECT `id`, `session_id`, `title` FROM `chat_menu` WHERE `status` = '1' and `id` < '{task_id if task_id else 99999}' ORDER BY create_at DESC LIMIT 30"
     result = db.query(sql)
     return result
 

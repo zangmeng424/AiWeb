@@ -9,6 +9,7 @@ const tooltip = document.getElementById('tips')
 const chatIn = document.getElementById('chat-in')
 let sseController = null  // SSE 全局控制器
 let last_assistant_yuan =""
+let global_last_task_id = 0
 
 const MERMAID_CDN_URL = "/static/js/mermaid.js"
 let mermaidLoadPromise = null
@@ -1033,11 +1034,17 @@ async function update_msg(element){
         })
 }
 
-async function update_task_list(){
+async function update_task_list(last_task_id){
     //初始化 AI对话列表
     const chatHistoryList = document.querySelector("#chat-history-list")
-    chatHistoryList.innerText = ""
-    return axios.get('/api/task/list')
+    if(last_task_id === 0)
+        chatHistoryList.innerText = ""
+
+    return axios.get('/api/task/list',{
+            params: {
+                last_task_id: last_task_id
+            }
+        })
         .then(response => {
             const res = response.data
             if (res.code === 1) {
@@ -1047,97 +1054,103 @@ async function update_task_list(){
                                                     <div class="sidebar-entry-txt">${item.title}</div>
                                                   </a>`
                 })
+                if(res.data.length == 0)
+                    global_last_task_id = -1
+                else{
+                    global_last_task_id = Number(res.data[res.data.length - 1].id)
 
-                const adoms = document.querySelectorAll('#chat-history-list a')
-                adoms.forEach(adom => {
-                    //显示编辑按钮
-                     adom.addEventListener('mouseenter', function (e) {
-                        const oldset=this.querySelector('.chat-setting')
-                        if (oldset) oldset.remove()
-                        const chatset = document.createElement('div')
-                        chatset.classList.add('chat-setting')
-                        chatset.classList.add('sidebar-entry-svg')
-                        chatset.innerText = `···`
-                        this.append(chatset)
-                    })
-                    //关闭编辑按钮
-                    adom.addEventListener('mouseleave', function (e) {
-                        this.querySelector('.chat-setting').remove()
-                        const oldPopup = document.querySelector('#chat-history-list .csp')
-                        if (oldPopup) {
-                            oldPopup.classList.add('fade-out')
-                            setTimeout(() => {
-                                oldPopup.remove()
-                            }, 150)
-                        }
-                    })
-                    //操作编辑按钮，对话加载页面更新
-                    adom.addEventListener('click', function (e) {
-                        e.preventDefault()
-                        console.log(e)
+                    const adoms = document.querySelectorAll('#chat-history-list a')
+                    adoms.forEach(adom => {
+                        //显示编辑按钮
+                         adom.addEventListener('mouseenter', function (e) {
+                            const oldset=this.querySelector('.chat-setting')
+                            if (oldset) oldset.remove()
+                            const chatset = document.createElement('div')
+                            chatset.classList.add('chat-setting')
+                            chatset.classList.add('sidebar-entry-svg')
+                            chatset.innerText = `···`
+                            this.append(chatset)
+                        })
+                        //关闭编辑按钮
+                        adom.addEventListener('mouseleave', function (e) {
+                            this.querySelector('.chat-setting').remove()
+                            const oldPopup = document.querySelector('#chat-history-list .csp')
+                            if (oldPopup) {
+                                oldPopup.classList.add('fade-out')
+                                setTimeout(() => {
+                                    oldPopup.remove()
+                                }, 150)
+                            }
+                        })
+                        //操作编辑按钮，对话加载页面更新
+                        adom.addEventListener('click', function (e) {
+                            e.preventDefault()
+                            console.log(e)
 
-                        //点击编辑菜单不判断
-                        if (e.target.className === "csp-c") return
-                        //拿取sessid
-                        const session_id = e.target.parentNode.dataset.id
-                        //检测点击编辑按钮
-                        if (e.target.className === "chat-setting sidebar-entry-svg"){
-                            const chatSetting = e.target
-                            if (chatSetting) {
-                                if (this.querySelector('.csp')){
-                                    this.querySelector('.csp').remove()
+                            //点击编辑菜单不判断
+                            if (e.target.className === "csp-c") return
+                            //拿取sessid
+                            const session_id = e.target.parentNode.dataset.id
+                            //检测点击编辑按钮
+                            if (e.target.className === "chat-setting sidebar-entry-svg"){
+                                const chatSetting = e.target
+                                if (chatSetting) {
+                                    if (this.querySelector('.csp')){
+                                        this.querySelector('.csp').remove()
+                                        return
+                                    }
+                                    // 查找弹窗蒙版
+                                    const csp = document.querySelector('#source .csp')
+                                    const popup = csp.cloneNode(true)
+                                    // 定位到 chatSetting 下方
+                                    popup.style.position = 'absolute'
+                                    popup.style.left = chatSetting.offsetLeft + chatSetting.offsetWidth - 30 + 'px'
+                                    popup.style.top = chatSetting.offsetTop + chatSetting.offsetHeight + 'px'
+                                    popup.style.zIndex = 1002
+                                    popup.querySelector('#csp-del').onclick = function () {
+                                        ch_del(session_id)
+                                    }
+                                    popup.querySelector('#csp-edit').onclick = function () {
+                                        ch_edit(session_id)
+                                    }
+                                    popup.querySelector('#csp-put').onclick = function () {
+                                        ch_put(session_id)
+                                    }
+                                    chatSetting.parentElement.appendChild(popup)
+                                    setTimeout(() => {
+                                        popup.classList.add('active')
+                                    }, 10)
+                                }
+                            }
+                            //对话本身被点击。切换对话
+                            else{
+                                if(e.target.closest('.csp')){
                                     return
                                 }
-                                // 查找弹窗蒙版
-                                const csp = document.querySelector('#source .csp')
-                                const popup = csp.cloneNode(true)
-                                // 定位到 chatSetting 下方
-                                popup.style.position = 'absolute'
-                                popup.style.left = chatSetting.offsetLeft + chatSetting.offsetWidth - 30 + 'px'
-                                popup.style.top = chatSetting.offsetTop + chatSetting.offsetHeight + 'px'
-                                popup.style.zIndex = 1002
-                                popup.querySelector('#csp-del').onclick = function () {
-                                    ch_del(session_id)
+                                let session_id = ""
+                                if(e.target.className === "sidebar-entry-txt"){
+                                        session_id = e.target.parentNode.dataset.id
+                                    }
+                                else{
+                                        session_id = e.target.dataset.id
+                                    }
+                                const old_session_id = localStorage.getItem('lastsessid')
+                                if (old_session_id !== session_id){//防止重复加载
+                                    const old_tasking = e.target.closest('#chat-history-list').querySelectorAll(".tasking")
+                                    old_tasking.forEach(div => {
+                                      div.classList.remove('tasking')
+                                    })
+                                    e.target.closest('a').classList.add('tasking')
+                                    // 更新地址栏地址
+                                    history.pushState(null, '', `/chat/${session_id}`)
+                                    load_history(session_id)
                                 }
-                                popup.querySelector('#csp-edit').onclick = function () {
-                                    ch_edit(session_id)
-                                }
-                                popup.querySelector('#csp-put').onclick = function () {
-                                    ch_put(session_id)
-                                }
-                                chatSetting.parentElement.appendChild(popup)
-                                setTimeout(() => {
-                                    popup.classList.add('active')
-                                }, 10)
+                                localStorage.setItem('lastsessid', session_id)
                             }
-                        }
-                        //对话本身被点击。切换对话
-                        else{
-                            if(e.target.closest('.csp')){
-                                return
-                            }
-                            let session_id = ""
-                            if(e.target.className === "sidebar-entry-txt"){
-                                    session_id = e.target.parentNode.dataset.id
-                                }
-                            else{
-                                    session_id = e.target.dataset.id
-                                }
-                            const old_session_id = localStorage.getItem('lastsessid')
-                            if (old_session_id !== session_id){//防止重复加载
-                                const old_tasking = e.target.closest('#chat-history-list').querySelectorAll(".tasking")
-                                old_tasking.forEach(div => {
-                                  div.classList.remove('tasking')
-                                })
-                                e.target.closest('a').classList.add('tasking')
-                                // 更新地址栏地址
-                                history.pushState(null, '', `/chat/${session_id}`)
-                                load_history(session_id)
-                            }
-                            localStorage.setItem('lastsessid', session_id)
-                        }
-                    })
-                 })
+                        })
+                     })
+                }
+
             }
             else {
                 // 处理错误信息
@@ -1722,7 +1735,22 @@ function close_setting_box(element){
 
     })
 
-    await update_task_list()
+
+    await update_task_list(global_last_task_id)
+
+    const chatHistoryList = document.querySelector("#chat-history-list")
+    setTimeout(() => {
+        let can_loading = 1
+        // 添加滚动事件监听
+        chatHistoryList.addEventListener('scroll', async function () {
+            const distanceToBottom = chatHistoryList.scrollHeight - chatHistoryList.scrollTop - chatHistoryList.clientHeight
+            if (distanceToBottom <= 100 && can_loading === 1 && global_last_task_id >= 0) {
+                can_loading = 0
+                await update_task_list(global_last_task_id)
+                can_loading = 1
+            }
+        })
+    },5)
 
     if (window.location.pathname.split('/').filter(Boolean).pop()) {
         load_history(localStorage.getItem('lastsessid'))

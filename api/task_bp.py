@@ -10,8 +10,9 @@ def list():
     rt_d = {
         "code": 1
     }
+    task_id = int(request.args.get('last_task_id'))
     try:
-        data = list_dao()
+        data = list_dao(task_id)
         rt_d["data"] = data
     except Exception:
         logger.exception(f'AI对话列表获取失败')

@@ -5,15 +5,14 @@ import faiss
 import numpy as np
 from sentence_transformers import SentenceTransformer
 import pickle
-
+from config_dev import embedding
 
 # ====== 初始化本地 embedding 模型 ======
-embed_model = SentenceTransformer(r"./bge-small-zh-v1.5")
+embed_model = SentenceTransformer(embedding)
 
 def get_embedding(text: str) -> np.ndarray:
     """
     输入文本 -> 输出向量 (ndarray)
-    使用本地 BAAI/bge-small-zh-v1.5
     """
     vec = embed_model.encode([text])[0]  # (768,)
     return np.array(vec, dtype="float32")

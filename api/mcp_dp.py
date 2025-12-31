@@ -74,7 +74,7 @@ def toggle_mcp_server(server_id):
         
         # 更新状态
         if update_mcp_server_status_dao(server_id, new_status):
-            rt_d["msg"] = f"服务器 {server_id} 已{'启用' if new_status else '禁用'}，需要重新加载才能生效"
+            rt_d["msg"] = f"服务器 {server_id} 已{'启用' if new_status else '禁用'}"
         else:
             rt_d["code"] = 0
             rt_d["msg"] = "更新失败"

@@ -931,6 +931,8 @@ async function send_msg(userMsgToRollback = null) {
             throw err;
         },
         onclose() {
+            sendBtn.classList.remove('stoptype')
+            sendBtn.innerHTML = '<svg width="20" height="20" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M24 6V42" stroke="#ffffff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></path><path d="M12 18L24 6L36 18" stroke="#ffffff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></path></svg>'
 
             console.log("\n[连接关闭]\n")
         }

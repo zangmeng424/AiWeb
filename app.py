@@ -36,15 +36,11 @@ app = create_app()
 
 
 
-
-@app.route('/', methods=['GET'])
-def index():
-    return render_template('index.html')
-
-@app.route('/chat/<sessid>', methods=['GET'])
-def index_son(sessid):
+@app.route('/')
+@app.route('/chat/<sessid>')
+def index(sessid=None):
     return render_template('index.html')
 
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True,port=5000)

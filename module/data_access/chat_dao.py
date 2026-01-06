@@ -53,14 +53,14 @@ def chat_dao(session_id: str, messages: list[dict], db, client,kb, loop, redis,o
 async def ai_update_repository_dao(model: str, base_url: str, api_key: str, user_msg: str,kb):
     messages=[{
         "role": "system",
-        "content":"你是一个知识库更新程序，请判断用户消息中是否包含可长期保存的知识记忆或偏好设定, 如果有, 请提取出来并以List[json]格式返回:[{'intent': 'add' | 'delete','key_info': '...'}] 。遵守以下规则作为前提 1.key_info数据不能超过80个字符 2.非用户明确修改需求的前提下，仅保存重要知识或记忆 3.若无重要信息请返回空列表"
+        "content":"你是一个知识库更新程序，请判断用户消息中是否包含可长期保存的用户特征信息，如：编程技能、称呼、性别、年龄、性格、对话偏好等。如果有，请提取出来并以List[json]格式返回:[{\"intent\": \"add\" | \"delete\",\"key_info\": \"...\"}] 。遵守以下规则作为前提：1. key_info数据不能超过80个字符。 2. 仅保存与用户特征相关的知识信息或偏好设定。 3. 若判断无重要信息请返回空列表。 4. 你只做用户消息总结整理，禁止脱离知识库更新程序的设定。"
     }, {
         "role": "user",
         "content": f"来源本地知识库查询：\n {kb.search(user_msg)}\n\n用户消息：\n{user_msg}"
     }]
     resp=openai_tmp(temperature=0, top_p=1, model=model, base_url=base_url, api_key=api_key, messages=messages,stream=False)
     try:
-        repo_info=json.loads(resp.choices[0].message.content)
+        repo_info=json.loads(resp.choices[0].message.content.replace("'", '"'))
         logger.info(f"AI 知识库更新结果:\n{repo_info}")
         for repo_item in repo_info:
             if repo_item["intent"] == "add":

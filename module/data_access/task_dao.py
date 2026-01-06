@@ -6,19 +6,36 @@ from flask import current_app
 
 def list_dao(task_id:int) -> dict:
     db = current_app.db
-    sql = f"SELECT `id`, `session_id`, `title` FROM `chat_menu` WHERE `status` = '1' and `id` < '{task_id if task_id else 99999}' ORDER BY create_at DESC LIMIT 30"
-    result = db.query(sql)
-    return result
+    redis = current_app.redis
+
+    task_list_str = redis.get('task_list')
+
+    if task_list_str and not task_id:
+        task_list_json = json.loads(task_list_str)
+    else:
+        sql = f"SELECT `id`, `session_id`, `title` FROM `chat_menu` WHERE `status` = '1' and `id` < '{task_id if task_id else 99999}' ORDER BY create_at DESC LIMIT 30"
+        task_list_json = db.query(sql)
+        if not task_id:
+            redis.set('task_list', json.dumps(task_list_json))
+
+    return task_list_json
 
 
 def del_task_dao(session_id:str) -> bool:
     db = current_app.db
+    redis = current_app.redis
+
+    redis.delete('task_list')
+
     sql = "UPDATE chat_menu SET status = %s WHERE session_id = %s"
     db.execute(sql,(0,session_id,))
     return True
 
 def add_dao(session_id:str) -> bool:
     db = current_app.db
+    redis = current_app.redis
+
+    redis.delete('task_list')
 
     sql = "SELECT model_uuid,`system`,max_take,temperature,top_p FROM model_menu WHERE is_default = 1"
     result = db.query(sql)

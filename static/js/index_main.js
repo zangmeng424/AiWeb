@@ -720,7 +720,7 @@ async function send_msg(userMsgToRollback = null) {
     const allmsgbox = Array.from(document.querySelectorAll("#chat-in .c-user .content,#chat-in .c-assistant .content"))
 
     for (let i = 0; i < max_take; i++) {
-        let index = allmsgbox.length - 1 - i
+        let index = allmsgbox.length - 2 - i
         if (index >= 0) {
             task_data.unshift(
                 {
@@ -756,6 +756,9 @@ async function send_msg(userMsgToRollback = null) {
     if (systemContent) {
         task_data.unshift({"role": "system", "content": systemContent.innerText})
     }
+
+    // 添加最新 user 消息
+    task_data.push({"role": "user", "content": allmsgbox[allmsgbox.length - 1].innerText})
 
     const assistantDiv = document.querySelector("#source .c-assistant").cloneNode(true)
     assistantDiv.querySelector(".assistant-group").style.display = "none"

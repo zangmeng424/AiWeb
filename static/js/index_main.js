@@ -1107,10 +1107,32 @@ async function update_task_list(last_task_id){
                                     // 查找弹窗蒙版
                                     const csp = document.querySelector('#source .csp')
                                     const popup = csp.cloneNode(true)
-                                    // 定位到 chatSetting 下方
-                                    popup.style.position = 'absolute'
-                                    popup.style.left = chatSetting.offsetLeft + chatSetting.offsetWidth - 30 + 'px'
-                                    popup.style.top = chatSetting.offsetTop + chatSetting.offsetHeight + 'px'
+                                    // 使用 fixed 定位，基于视口定位，不受滚动影响
+                                    popup.style.position = 'fixed'
+                                    // 获取 chatSetting 相对于视口的位置
+                                    const chatSettingRect = chatSetting.getBoundingClientRect()
+                                    // 获取 chat-history-list 容器的位置
+                                    const chatHistoryList = document.querySelector('#chat-history-list')
+                                    const listRect = chatHistoryList.getBoundingClientRect()
+
+                                    // 计算菜单位置
+                                    let left = chatSettingRect.left + chatSetting.offsetWidth - 30
+                                    let top = chatSettingRect.bottom + 4
+
+                                    // 检查是否超出容器底部，如果超出则向上显示
+                                    // 增加触发阈值，只有在菜单真的超出时才向上显示
+                                    const popupHeight = 120 // 菜单高度
+                                    const containerBottom = listRect.bottom
+                                    const bottomSpace = containerBottom - top
+
+                                    // 只有当底部空间严重不足时才向上显示（阈值从 +10 改为 +20）
+                                    if (bottomSpace < popupHeight + 20) {
+                                        // 空间不足，向上显示
+                                        top = chatSettingRect.top - popupHeight - 4
+                                    }
+
+                                    popup.style.left = left + 'px'
+                                    popup.style.top = top + 'px'
                                     popup.style.zIndex = 1002
                                     popup.querySelector('#csp-del').onclick = function () {
                                         ch_del(session_id)

@@ -1,0 +1,23 @@
+stages:
+  - deploy
+
+deploy_job:
+  stage: deploy
+  only:
+    - main  # 仅当 main 分支有更新时触发
+  before_script:
+    # 安装 ssh-agent 并添加私钥
+    - 'command -v ssh-agent >/dev/null || ( apt-get update -y && apt-get install openssh-client -y )'
+    - eval $(ssh-agent -s)
+    - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
+    - mkdir -p ~/.ssh
+    - chmod 700 ~/.ssh
+    # 自动接受服务器主机密钥（首次连接需要，生产环境建议手动指定指纹）
+    - ssh-keyscan $SERVER_IP >> ~/.ssh/known_hosts
+    - chmod 644 ~/.ssh/known_hosts
+
+  script:
+    - echo "开始部署..."
+    # 连接服务器，拉取代码并重启服务
+    - ssh $SERVER_USER@$SERVER_IP "cd $PROJECT_PATH && git pull origin main"
+    - echo "部署完成"

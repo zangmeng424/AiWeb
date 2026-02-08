@@ -359,7 +359,14 @@ async function ch_edit(sessid) {
                 setbox.querySelector("#top-p").value = response.data.data.top_p
                 setbox.querySelector("#top-p-in").value = response.data.data.top_p
 
-                response.data.data.model
+                // 根据当前对话的模型 UUID 自动选择对应的模型
+                const currentModelUuid = response.data.data.model
+                const chatModelSelect = document.getElementById('chat-model')
+                chatModelSelect.value = currentModelUuid
+
+                // 触发 change 事件来更新对应的模型参数
+                const changeEvent = new Event('change')
+                chatModelSelect.dispatchEvent(changeEvent)
 
             } else {
                 console.log(response.data.msg)

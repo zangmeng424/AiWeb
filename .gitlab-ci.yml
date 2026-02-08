@@ -22,5 +22,5 @@ deploy_job:
   script:
     - echo "开始部署..."
     # 连接服务器，拉取代码并重启服务
-    - ssh $SERVER_USER@$SERVER_IP "cd $PROJECT_PATH && git pull origin main"
+    - ssh $SERVER_USER@$SERVER_IP "cd $PROJECT_PATH && git fetch --all && git reset --hard origin/main && git clean -fd"
     - echo "部署完成"

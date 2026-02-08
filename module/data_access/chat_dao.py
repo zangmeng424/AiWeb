@@ -121,24 +121,34 @@ def get_history_dao(session_id:str) -> json:
 
 def update_history_dao(msg_json:dict) -> json:
     db = current_app.db
-    #更新最新消息
-    sql = "INSERT INTO chat_history (session_id,chat_uuid,role,content,children,metadata,created_at) VALUES (%s,%s,%s,%s,%s,%s,%s)"
-    db.execute(sql, (msg_json["session_id"],msg_json["chat_uuid"],msg_json["role"],msg_json["metadata"]["content"],json.dumps([]),json.dumps(msg_json["metadata"]),msg_json["created_at"],))
+    try:
+        metadata = msg_json["metadata"]
+        if "parent_id" in metadata and metadata["parent_id"]:
+            # 检查父消息是否存在
+            sql = "SELECT chat_uuid, children FROM chat_history WHERE chat_uuid = %s"
+            result=db.query(sql,(metadata["parent_id"],))
 
-    metadata = msg_json["metadata"]
-    if "parent_id" in metadata and metadata["parent_id"]:
-        #拿取更新消息的父消息的children初始消息
-        sql = "SELECT children FROM chat_history WHERE chat_uuid = %s"
-        result=db.query(sql,(metadata["parent_id"],))
-        children = result[0]["children"]
-        children =json.loads(children) if json.loads(children) else []
-        children.append(msg_json["chat_uuid"])
-        # 更新更新消息的父消息的children
-        sql = "UPDATE chat_history SET children = %s WHERE chat_uuid = %s and role != 'tool'"
-        db.execute(sql, (json.dumps(children),metadata["parent_id"],))
+            if not result:
+                raise Exception(f"父消息不存在: parent_id={metadata['parent_id']}")
 
+            children = result[0]["children"]
+            children =json.loads(children) if json.loads(children) else []
+            children.append(msg_json["chat_uuid"])
 
-    return True
+            # 更新父消息的children
+            sql = "UPDATE chat_history SET children = %s WHERE chat_uuid = %s and role != 'tool'"
+            db.execute(sql, (json.dumps(children),metadata["parent_id"],))
+
+            # 更新最新消息
+            sql = "INSERT INTO chat_history (session_id,chat_uuid,role,content,children,metadata,created_at) VALUES (%s,%s,%s,%s,%s,%s,%s)"
+            db.execute(sql, (msg_json["session_id"], msg_json["chat_uuid"], msg_json["role"],
+                             msg_json["metadata"]["content"], json.dumps([]), json.dumps(msg_json["metadata"]),
+                             msg_json["created_at"],))
+
+        return True
+    except Exception as e:
+        logger.exception(f"保存对话记录失败: session_id={msg_json.get('session_id')}, chat_uuid={msg_json.get('chat_uuid')}, error={e}")
+        raise Exception(f"保存对话记录失败: {e}")
 
 async def tools_dao(tools_call_name:str,tools_call_params:dict) -> str:
     client = current_app.client

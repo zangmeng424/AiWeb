@@ -1,6 +1,9 @@
 stages:
   - deploy
 
+variables:
+  GIT_DEPTH: 0
+
 deploy_job:
   stage: deploy
   only:

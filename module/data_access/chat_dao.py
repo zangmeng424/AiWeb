@@ -139,11 +139,11 @@ def update_history_dao(msg_json:dict) -> json:
             sql = "UPDATE chat_history SET children = %s WHERE chat_uuid = %s and role != 'tool'"
             db.execute(sql, (json.dumps(children),metadata["parent_id"],))
 
-            # 更新最新消息
-            sql = "INSERT INTO chat_history (session_id,chat_uuid,role,content,children,metadata,created_at) VALUES (%s,%s,%s,%s,%s,%s,%s)"
-            db.execute(sql, (msg_json["session_id"], msg_json["chat_uuid"], msg_json["role"],
-                             msg_json["metadata"]["content"], json.dumps([]), json.dumps(msg_json["metadata"]),
-                             msg_json["created_at"],))
+        # 更新最新消息
+        sql = "INSERT INTO chat_history (session_id,chat_uuid,role,content,children,metadata,created_at) VALUES (%s,%s,%s,%s,%s,%s,%s)"
+        db.execute(sql, (msg_json["session_id"], msg_json["chat_uuid"], msg_json["role"],
+                         msg_json["metadata"]["content"], json.dumps([]), json.dumps(msg_json["metadata"]),
+                         msg_json["created_at"],))
 
         return True
     except Exception as e:

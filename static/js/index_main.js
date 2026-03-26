@@ -10,6 +10,7 @@ const chatIn = document.getElementById('chat-in')
 let sseController = null  // SSE 全局控制器
 let last_assistant_yuan =""
 let global_last_task_id = 0
+let isSending = false  // 防止并发发送的标志
 
 const MERMAID_CDN_URL = "/static/js/mermaid.js"
 let mermaidLoadPromise = null
@@ -729,6 +730,13 @@ function generateUUID() {
 //页面消息发送与新消息加载
 // userMsgToRollback: 如果发生错误需要回退的用户消息元素（可选）
 async function send_msg(userMsgToRollback = null) {
+    // 防止并发发送
+    if (isSending) {
+        console.log("已有发送进行中，跳过此次请求")
+        return
+    }
+    isSending = true
+
     // 如果上一个 SSE 还在，就终止它
     if (sseController) {
         sseController.abort()
@@ -809,6 +817,7 @@ async function send_msg(userMsgToRollback = null) {
         headers: {"Content-Type": "application/json"},
         body: JSON.stringify({session_id: session_id,on_tools:on_tools,on_knowledge:on_knowledge, data: task_data}),
         signal,
+        openWhenHidden: true,  // 后台/切换标签不主动中断和重连
         onopen(response) {
             currentText = '' // 每次新对话重置
             last_assistant_yuan = ''
@@ -825,6 +834,7 @@ async function send_msg(userMsgToRollback = null) {
                 assistantDiv.querySelector(".assistant-group").style.display = "flex"
                 update_msg(assistantDiv)
                 sseController = null
+                isSending = false  // 重置发送标志
                 // 消息完成时检查按钮状态
                 setTimeout(() => checkScrollToBottomButton(), 100)
                 //检查是否存在tools_call
@@ -875,6 +885,7 @@ async function send_msg(userMsgToRollback = null) {
                 // 错误处理：回退消息
                 console.log("AI对话出错，开始回退消息")
                 sseController = null
+                isSending = false  // 重置发送标志
                 
                 // 1. 移除assistant消息DOM (如果已添加)
                 if (assistantDiv.parentNode) {
@@ -975,6 +986,7 @@ async function send_msg(userMsgToRollback = null) {
             sendBtn.innerHTML = '<svg width="20" height="20" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M24 6V42" stroke="#ffffff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></path><path d="M12 18L24 6L36 18" stroke="#ffffff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></path></svg>'
 
             console.log("\n[连接关闭]\n")
+            isSending = false  // 重置发送标志
         }
     });
 

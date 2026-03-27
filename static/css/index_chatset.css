@@ -101,6 +101,15 @@ body.mask::before {
 .setting-box button:hover {
     background: #13a06b;
 }
+
+#reload_tips {
+    margin-top: 0;
+    margin-left: 20px;
+    display: flex;
+    align-items: center;
+    color: #856404;
+}
+
 #chatset {
     display: flex;
     height: 80%;

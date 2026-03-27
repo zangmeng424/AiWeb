@@ -1432,7 +1432,6 @@ function close_setting_box(element){
             })
             
             if (response.data.code === 1) {
-                alert(response.data.msg + '\n\n是否现在重新加载？')
                 
                 // 关闭添加弹窗
                 document.querySelector('#mcp-add-cancel').click()
@@ -1468,12 +1467,12 @@ function close_setting_box(element){
                 const reloadBtn = document.querySelector('#mcp-reload-btn')
                 reloadBtn.style.display = 'block'
                 reloadBtn.onclick = async function() {
-                    if (!confirm('重新加载将断开所有MCP连接并重新建立，确定继续吗？')) return
                     
                     this.disabled = true
                     this.innerText = '加载中...'
                     
                     try {
+                        document.querySelector("#reload_tips").innerText = "加载中..."
                         const res = await axios.post('/api/mcp/reload')
                         if (res.data.code === 1) {
                             alert(res.data.msg)
@@ -1485,6 +1484,7 @@ function close_setting_box(element){
                         console.error('重新加载失败:', err)
                         alert('重新加载失败，请查看控制台')
                     } finally {
+                        document.querySelector("#reload_tips").innerText = ""
                         this.disabled = false
                         this.innerText = '重新加载'
                     }
@@ -1651,8 +1651,10 @@ function close_setting_box(element){
                                         console.log(`${serverId} 状态已切换`)
                                         // 提示需要重新加载
                                         if (confirm(res.data.msg + '\n\n是否现在重新加载？')) {
+                                            document.querySelector("#reload_tips").innerText = "加载中..."
                                             axios.post('/api/mcp/reload').then(() => {
                                                 loadMcpServers(container)
+                                                document.querySelector("#reload_tips").innerText = ""
                                             })
                                         }
                                     } else {

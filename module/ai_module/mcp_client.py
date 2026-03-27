@@ -35,7 +35,7 @@ class MCPClient:
                 logger.info(f"Skipped {name} (disabled)")
                 continue
             
-            server_params = StdioServerParameters(command=value["command"], args=value["args"], env=None)
+            server_params = StdioServerParameters(command=value["command"], args=value["args"], env=value["env"] if value.get("env") else None)
             stdio_transport = await self.exit_stack.enter_async_context(stdio_client(server_params))
             stdio, write = stdio_transport
             session = await self.exit_stack.enter_async_context(ClientSession(stdio, write))

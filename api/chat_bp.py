@@ -72,7 +72,7 @@ def history():
 
     elif request.method == 'POST':
         data = request.get_json()  # 获取 JSON 数据
-        logger.info(f"保存对话记录： session_id:[{data['session_id']}]msg:[{data['metadata']['content'][:8]}...]")
+        logger.info(f"保存对话记录： session_id:[{data['session_id']}]msg:[{data['metadata']['content'][:8].replace('\n', '')}]...]")
         rt_d = {
             "code": 1,
         }

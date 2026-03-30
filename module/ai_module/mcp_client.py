@@ -32,7 +32,7 @@ class MCPClient:
         for name, value in mcp_config["mcpServers"].items():
             # 检查是否启用
             if not value.get("enabled", True):
-                logger.info(f"Skipped {name} (disabled)")
+                logger.info(f"Skipped [{name}] (disabled)")
                 continue
             
             server_params = StdioServerParameters(command=value["command"], args=value["args"], env=value["env"] if value.get("env") else None)
@@ -42,7 +42,7 @@ class MCPClient:
             await session.initialize()
             response = await session.list_tools()
             tools = [tool.name for tool in response.tools]
-            logger.info(f"Connected to {name} with tools: {tools}")
+            logger.info(f"Connected to [{name}] with tools: {tools}")
 
             self.service_tools[name] = {}
             for tool in response.tools:
@@ -72,7 +72,7 @@ class MCPClient:
     def get_loaded_tools_info(self) -> dict:
         # 返回当前加载的 MCP 工具信息（按 service 分类）
         if not self.service_tools:
-            print("当前没有加载任何工具")
+            logger.debug("当前没有加载任何工具")
             return {}
 
         return self.service_tools
@@ -80,7 +80,7 @@ class MCPClient:
     async def get_tools(self) -> list[dict]:
         tools = []
         if not self.all_tools:
-            print("当前没有加载任何工具")
+            logger.debug("当前没有加载任何工具")
             return tools
 
         # 遍历所有 service 的工具
@@ -110,8 +110,8 @@ class MCPClient:
         session = matched["session"]
         result = await session.call_tool(tool_name, tool_args)
 
-        logger.info({"call": tool_name, "result": result})
-        logger.info(f"Calling tool {tool_name} with args {tool_args} result {result.content[0].text}")
+        logger.debug({"call": tool_name, "result": result})
+        logger.info(f"Calling tool [{tool_name}] with args [{str(tool_args)[:8].replace('\n', '')}...] result [{result.content[0].text[:8].replace('\n', '')}...]")
 
         return result.content[0].text
 

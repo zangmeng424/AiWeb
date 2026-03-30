@@ -111,7 +111,11 @@ class MCPClient:
         result = await session.call_tool(tool_name, tool_args)
 
         logger.debug({"call": tool_name, "result": result})
-        logger.info(f"Calling tool [{tool_name}] with args [{str(tool_args)[:8].replace('\n', '')}...] result [{result.content[0].text[:8].replace('\n', '')}...]")
+        logger.info("Calling tool [{}] with args [{}...] result [{}...]".format(
+            tool_name,
+            str(tool_args)[:8].replace('\n', ''),
+            result.content[0].text[:8].replace('\n', '')
+        ))
 
         return result.content[0].text
 

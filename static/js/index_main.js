@@ -149,8 +149,6 @@ function addCodeCopyButtons(container) {
         pre.style.position = 'relative'
         pre.appendChild(copyBtn)
 
-        // 标记已添加
-        pre.dataset.copyButtonAdded = 'true'
     })
 }
 
@@ -1904,6 +1902,7 @@ sendBtn.onclick = () => {
         update_msg(assistant_box)
         setTimeout(() => {
                 console.log("SSE上一个连接已终止")
+                isSending = false  // 重置发送标志
             }, 50)
     }
 

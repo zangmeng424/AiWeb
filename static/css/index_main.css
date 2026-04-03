@@ -168,6 +168,8 @@
     font-weight:lighter;
     padding: 10px 15px;
     border-radius: 20px;
+    max-height: 200px;
+    overflow: auto;    /* 超出时显示滚动条 */
 }
 
 .c-system .content:hover {

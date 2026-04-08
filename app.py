@@ -11,6 +11,7 @@ from module.database.redis_db import init_redis
 from api import register_blueprints
 from module.log_options import init_log
 from module.repository.repository import LocalKnowledgeBase
+from module.ai_module.skills import Skills
 
 
 def create_app():
@@ -20,6 +21,7 @@ def create_app():
     app.redis = init_redis(app)
     app.kb = LocalKnowledgeBase()
     app.client = MCPClient()
+    app.skill = Skills()
 
     # 创建一个持久异步循环，不关闭
     app.loop = asyncio.new_event_loop()

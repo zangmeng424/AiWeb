@@ -10,8 +10,9 @@ from flask import current_app
 from module.ai_module.module_api_tmp import *
 
 
-def chat_dao(session_id: str, messages: list[dict], db, client,kb, loop, redis,on_knowledge,on_tools) -> Stream[ChatCompletionChunk]:
+def chat_dao(session_id: str, messages: list[dict], db, client, skill, kb, loop, redis, on_knowledge, on_tools, on_skill) -> Stream[ChatCompletionChunk]:
 
+    #从redis拿取缓存的对话模型信息
     chat_info_str = redis.get(f'chat_menu:{session_id}')
 
     if chat_info_str:
@@ -32,21 +33,28 @@ def chat_dao(session_id: str, messages: list[dict], db, client,kb, loop, redis,o
         chat_info = chat_info[0]
         redis.set(f'chat_menu:{session_id}',json.dumps(chat_info))
 
+    #加载模型信息
     temperature = chat_info["temperature"]
     top_p = chat_info["top_p"]
     model = chat_info["model"]
     base_url = chat_info["base_url"]
     api_key = chat_info["api_key"]
 
+    # mcp工具加载
+    tools = asyncio.run_coroutine_threadsafe(client.get_tools(),loop).result() if on_tools else []
 
-    tools = asyncio.run_coroutine_threadsafe(client.get_tools(),loop).result() if on_tools else None
-    if messages[-1]["role"] == "user":
+    #知识库信息加载
+    if messages[-1]["role"] == "user" and on_knowledge:
         user_msg = messages[-1]["content"]
-        if on_knowledge:
-            #拼接本地知识库
-            messages[-1]["content"] = f"来源本地知识库查询：\n {kb.search(user_msg)}\n\n用户消息：\n{user_msg}"
+        #拼接本地知识库
+        messages[-1]["content"] = f"来源本地知识库查询：\n {kb.search(user_msg)}\n\n用户消息：\n{user_msg}"
+        #知识库更新
+        asyncio.run(ai_update_repository_dao(model=model, base_url=base_url, api_key=api_key, user_msg=user_msg,kb=kb))
 
-            asyncio.run(ai_update_repository_dao(model=model, base_url=base_url, api_key=api_key, user_msg=user_msg,kb=kb))
+    #skill加载
+    tools += [skill.build_activate_tool()] if on_skill else []
+    if skill_list := skill.get_skill_description():
+        messages[0]["content"] += f"\n\nAvailable skills:\n{skill_list}\n\nUse activate_skill when needed."
 
     return openai_tmp(temperature=temperature,top_p=top_p,model=model,base_url=base_url,api_key=api_key,messages=messages,tools=tools)
 
@@ -152,8 +160,15 @@ def update_history_dao(msg_json:dict) -> json:
 
 async def tools_dao(tools_call_name:str,tools_call_params:dict) -> str:
     client = current_app.client
+    skill = current_app.skill
 
-    tool_return = await client.get_tool_return(tools_call_name,tools_call_params)
+    #分类型加载工具
+    #加载skill
+    if tools_call_name == "activate_skill":
+        tool_return = skill.activate_skill(tools_call_params.get("name",""))
+    #加载mcp
+    else:
+        tool_return = await client.get_tool_return(tools_call_name,tools_call_params)
 
     return tool_return
 

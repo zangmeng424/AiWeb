@@ -13,6 +13,7 @@ chat_bp = Blueprint('chat_bp', __name__)
 def chat_with_bot():
     data = request.get_json()
     client = current_app.client
+    skill = current_app.skill
     db = current_app.db
     loop = current_app.loop
     kb = current_app.kb
@@ -24,7 +25,7 @@ def chat_with_bot():
             yield "event: start\ndata: {}\n\n"
             time.sleep(0.5)
             
-            response = chat_dao(session_id=data["session_id"], messages=data["data"], db=db, client=client, loop=loop,kb=kb,redis=redis,on_tools=data["on_tools"],on_knowledge=data["on_knowledge"])
+            response = chat_dao(session_id=data["session_id"], messages=data["data"], db=db, client=client,skill=skill,loop=loop,kb=kb,redis=redis,on_tools=data["on_tools"],on_knowledge=data["on_knowledge"],on_skill=data["on_skill"])
             
             if response:
                 for chunk in response:

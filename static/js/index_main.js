@@ -158,7 +158,7 @@ async function auto_ai_title(user_msg){
     fetchEventSource("/api/chat", {
         method: "POST",
         headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({session_id: session_id,on_tools:false,on_knowledge:false,
+        body: JSON.stringify({session_id: session_id,on_tools:false,on_knowledge:false,on_skill:false,
             data:[
                 {
                     "role": "system",
@@ -807,10 +807,11 @@ async function send_msg(userMsgToRollback = null) {
     const tool_call_box = document.querySelector('#source .tools-call-box').cloneNode(true)
     const on_tools = localStorage.getItem('on_tools') !== 'false'
     const on_knowledge = localStorage.getItem('on_knowledge') !== 'false'
+    const on_skill = localStorage.getItem('on_skill') !== 'false'
     return fetchEventSource("/api/chat", {
         method: "POST",
         headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({session_id: session_id,on_tools:on_tools,on_knowledge:on_knowledge, data: task_data}),
+        body: JSON.stringify({session_id: session_id,on_tools:on_tools,on_knowledge:on_knowledge,on_skill:on_skill, data: task_data}),
         signal,
         openWhenHidden: true,  // 后台/切换标签不主动中断和重连
         onopen(response) {

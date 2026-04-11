@@ -111,12 +111,15 @@ def get_history_dao(session_id:str) -> json:
             if data_c["role"] == "tool":
                 if rt_data["data"].get(data_c["chat_uuid"]):
                     rt_data["data"][data_c["chat_uuid"]]["tool_return"] = json.loads(data_c["metadata"])
+                else:
+                    rt_data["data"][data_c["chat_uuid"]] = {"tool_return":json.loads(data_c["metadata"])}
             else:
-                rt_data["data"][data_c["chat_uuid"]]={
+                rt_data["data"][data_c["chat_uuid"]] = rt_data["data"][data_c["chat_uuid"]] if rt_data["data"].get(data_c["chat_uuid"]) else {}
+                rt_data["data"][data_c["chat_uuid"]].update({
                     **json.loads(data_c["metadata"]),
                     "role": data_c["role"],
                     "children": json.loads(data_c["children"] if data_c["children"] else [])
-                }
+                })
     else:
         rt_data["data"]={}
 

@@ -251,7 +251,7 @@ async function auto_ai_title(user_msg){
 }
 
 // 回到底部按钮配置
-const SCROLL_TO_BOTTOM_THRESHOLD = 800 // 距离底部多少像素时显示按钮
+const SCROLL_TO_BOTTOM_THRESHOLD = 100 // 距离底部多少像素时显示按钮
 
 // 延迟初始化，确保DOM已加载
 let scrollToBottomBtn = null
@@ -856,10 +856,11 @@ async function send_msg(userMsgToRollback = null) {
                                     tools_box.querySelector(".tools-call-return .tools-content").innerText = response.data.data
                                     tools_box.querySelector(".tools-call-return").style.display = "block"
                                     tools_box.querySelector(".tools-call-actions").remove()
+                                    tools_box.classList.remove('expanded')
+                                    tools_box.querySelector('.tools-toggle-btn').textContent = '展开'
                                     update_msg(tools_box)
                                     //二次消息发送（工具调用后继续对话，不需要回退）
                                     send_msg(null)
-
 
                                 } else {
                                     tools_box.querySelector(".tools-call-actions").style.display = "flex"

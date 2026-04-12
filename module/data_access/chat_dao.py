@@ -52,9 +52,10 @@ def chat_dao(session_id: str, messages: list[dict], db, client, skill, kb, loop,
         asyncio.run(ai_update_repository_dao(model=model, base_url=base_url, api_key=api_key, user_msg=user_msg,kb=kb))
 
     #skill加载
-    tools += [skill.build_activate_tool()] if on_skill else []
-    if skill_list := skill.get_skill_description():
-        messages[0]["content"] += f"\n\nAvailable skills:\n{skill_list}\n\nUse activate_skill when needed."
+    if on_skill:
+        tools += [skill.build_activate_tool()]
+        if skill_list := skill.get_skill_description():
+            messages[0]["content"] += f"\n\nAvailable skills:\n{skill_list}\n\nUse activate_skill when needed."
 
     return openai_tmp(temperature=temperature,top_p=top_p,model=model,base_url=base_url,api_key=api_key,messages=messages,tools=tools)
 

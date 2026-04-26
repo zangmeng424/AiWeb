@@ -307,6 +307,9 @@
     white-space: nowrap;
     margin-top: 4px;
     overflow-x: auto;
+    max-height: 300px;
+    overflow-y: auto;
+
 }
 
 .tools-call-id {

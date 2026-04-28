@@ -46,8 +46,9 @@ def chat_dao(session_id: str, messages: list[dict], db, client, skill, kb, loop,
     #知识库信息加载
     if messages[-1]["role"] == "user" and on_knowledge:
         user_msg = messages[-1]["content"]
+        kb_list = kb.search(user_msg)
         #拼接本地知识库
-        messages[-1]["content"] = f"来源本地知识库查询：\n {kb.search(user_msg)}\n\n用户消息：\n{user_msg}"
+        messages[-1]["content"] = f"来源本地知识库匹配：\n {kb_list}\n\n用户消息：\n{user_msg}" if kb_list else user_msg
         #知识库更新
         asyncio.run(ai_update_repository_dao(model=model, base_url=base_url, api_key=api_key, user_msg=user_msg,kb=kb))
 

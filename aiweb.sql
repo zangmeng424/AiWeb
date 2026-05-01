@@ -32,9 +32,9 @@ CREATE TABLE `chat_history` (
   `session_id` varchar(36) COLLATE utf8mb4_general_ci NOT NULL,
   `chat_uuid` varchar(36) COLLATE utf8mb4_general_ci NOT NULL,
   `role` enum('user','assistant','tool') COLLATE utf8mb4_general_ci NOT NULL,
-  `content` text COLLATE utf8mb4_general_ci,
-  `children` text COLLATE utf8mb4_general_ci DEFAULT NULL,
-  `metadata` text COLLATE utf8mb4_general_ci,
+  `content` mediumtext COLLATE utf8mb4_general_ci,
+  `children` mediumtext COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `metadata` mediumtext COLLATE utf8mb4_general_ci,
   `created_at` varchar(50) COLLATE utf8mb4_general_ci DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 

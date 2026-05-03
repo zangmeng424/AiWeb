@@ -9,7 +9,7 @@ setting_bp = Blueprint('setting_bp', __name__)
 @setting_bp.route('/system', methods=['POST'])
 def change_system():
     data = request.get_json()  # 获取 JSON 数据
-    logger.info(f"修改系统提示词：{data}")
+    logger.info(f"修改系统提示词：  session_id:{data['session_id']},system:{data['system'][:20]}")
     rt_d = {
         "code": 1,
     }

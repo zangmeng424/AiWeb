@@ -32,7 +32,9 @@
 .mcpserver-setting-box,
 .mcp-add-server-box,
 .global-setting-box,
-.setting-box {
+.setting-box,
+.skill-setting-box,
+.skill-edit-box {
     opacity: 0;
     position: fixed;
     top: 50%;
@@ -72,7 +74,9 @@ body.mask::before {
 .mcpserver-setting-box h2,
 .mcp-add-server-box h2,
 .global-setting-box h2,
-.setting-box h2 {
+.setting-box h2,
+.skill-setting-box h2,
+.skill-edit-box h2 {
     display: flex;
     margin-top: 0;
     padding-bottom: 4px;
@@ -82,7 +86,9 @@ body.mask::before {
 .mcpserver-setting-box button,
 .mcp-add-server-box button,
 .global-setting-box button,
-.setting-box button {
+.setting-box button,
+.skill-setting-box button,
+.skill-edit-box button {
     margin-left: 20px;
     float: right;
     background-color: #19c37d;
@@ -98,11 +104,14 @@ body.mask::before {
 .mcpserver-setting-box button:hover,
 .mcp-add-server-box button:hover,
 .global-setting-box button:hover,
-.setting-box button:hover {
+.setting-box button:hover,
+.skill-setting-box button:hover,
+.skill-edit-box button:hover {
     background: #13a06b;
 }
 
-#reload_tips {
+#reload_tips,
+#skill_reload_tips {
     margin-top: 0;
     margin-left: 20px;
     display: flex;
@@ -283,35 +292,47 @@ body.mask::before {
 
 /* MCP服务器设置框滚动条样式 */
 .mcpserver-setting-box #chatset,
-.mcp-add-server-box #chatset {
+.mcp-add-server-box #chatset,
+.skill-setting-box #chatset,
+.skill-edit-box #chatset {
     overflow-y: scroll;
     scrollbar-gutter: stable;
 }
 
 .mcpserver-setting-box #chatset::-webkit-scrollbar,
-.mcp-add-server-box #chatset::-webkit-scrollbar {
+.mcp-add-server-box #chatset::-webkit-scrollbar,
+.skill-setting-box #chatset::-webkit-scrollbar,
+.skill-edit-box #chatset::-webkit-scrollbar {
     width: 8px;
 }
 
 .mcpserver-setting-box #chatset::-webkit-scrollbar-track,
-.mcp-add-server-box #chatset::-webkit-scrollbar-track {
+.mcp-add-server-box #chatset::-webkit-scrollbar-track,
+.skill-setting-box #chatset::-webkit-scrollbar-track,
+.skill-edit-box #chatset::-webkit-scrollbar-track {
     background: transparent;
 }
 
 .mcpserver-setting-box #chatset::-webkit-scrollbar-thumb,
-.mcp-add-server-box #chatset::-webkit-scrollbar-thumb {
+.mcp-add-server-box #chatset::-webkit-scrollbar-thumb,
+.skill-setting-box #chatset::-webkit-scrollbar-thumb,
+.skill-edit-box #chatset::-webkit-scrollbar-thumb {
     background: #d1d5db;
     border-radius: 4px;
 }
 
 .mcpserver-setting-box #chatset::-webkit-scrollbar-thumb:hover,
-.mcp-add-server-box #chatset::-webkit-scrollbar-thumb:hover {
+.mcp-add-server-box #chatset::-webkit-scrollbar-thumb:hover,
+.skill-setting-box #chatset::-webkit-scrollbar-thumb:hover,
+.skill-edit-box #chatset::-webkit-scrollbar-thumb:hover {
     background: #b0b3b8;
 }
 
 /* 火狐浏览器滚动条样式 */
 .mcpserver-setting-box #chatset,
-.mcp-add-server-box #chatset {
+.mcp-add-server-box #chatset,
+.skill-setting-box #chatset,
+.skill-edit-box #chatset {
     scrollbar-width: thin;
     scrollbar-color: #d1d5db transparent;
 }

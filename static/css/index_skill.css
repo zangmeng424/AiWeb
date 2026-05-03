@@ -1,0 +1,58 @@
+.skill-setting-box .skill-item-container{
+    margin-bottom: 15px;
+    padding: 15px;
+    border: 1px solid rgb(221, 221, 221);
+    border-radius: 8px;
+    background-color: #f9f9f9
+}
+
+.skill-setting-box .skill-title{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+}
+
+.skill-setting-box .skill-name-box{
+    display: flex;
+    align-items: center;
+    flex: 1;
+}
+
+.skill-setting-box .skill-name-text{
+    margin: 0;
+    color: #333;
+    font-size: 16px;
+}
+
+.skill-setting-box .skill-item-container{
+    margin-bottom: 15px;
+    padding: 15px;
+    border: 1px solid rgb(221, 221, 221);
+    border-radius: 8px;
+    background-color: #f9f9f9
+}
+
+/* 按钮样式 */
+.skill-setting-box .skill-edit-btn {
+    padding: 4px 12px;
+    font-size: 13px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.skill-setting-box .skill-edit-btn:hover {
+    background-color: #0056b3;
+}
+
+
+.skill-setting-box .skill-description {
+    margin-bottom: 10px;
+    color: #666;
+    font-size: 14px;
+    line-height: 1.5;
+}

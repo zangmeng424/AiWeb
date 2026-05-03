@@ -188,6 +188,7 @@ function model_setting_del() {
 
 function knowledge_setting_cancel() {
     const setbox = document.querySelector('.knowledge-setting-box')
+    setbox.classList.remove('active')
     setbox.classList.add('fade-out')
     setTimeout(() => {
         setbox.classList.remove('fade-out')
@@ -198,6 +199,7 @@ function knowledge_setting_cancel() {
 
 function global_setting_cancel() {
     const setbox = document.querySelector('.global-setting-box')
+    setbox.classList.remove('active')
     setbox.classList.add('fade-out')
     setTimeout(() => {
         setbox.classList.remove('fade-out')
@@ -207,11 +209,11 @@ function global_setting_cancel() {
 }
 
 function mcpserver_setting_cancel() {
+    mcp_add_server_cancel()
     const setbox = document.querySelector('.mcpserver-setting-box')
-    // 隐藏重新加载按钮
+    setbox.classList.remove('active')
     const reloadBtn = document.querySelector('#mcp-reload-btn')
     if (reloadBtn) reloadBtn.style.display = 'none'
-    
     setbox.classList.add('fade-out')
     setTimeout(() => {
         setbox.classList.remove('fade-out')
@@ -222,6 +224,7 @@ function mcpserver_setting_cancel() {
 
 function mcp_add_server_cancel() {
     const setbox = document.querySelector('.mcp-add-server-box')
+    setbox.classList.remove('active')
     setbox.classList.add('fade-out')
     setTimeout(() => {
         setbox.classList.remove('fade-out')
@@ -231,6 +234,57 @@ function mcp_add_server_cancel() {
         // 清空输入框
         document.querySelector('#mcp-server-json').value = ''
     }, 150)
+}
+
+function skill_setting_cancel() {
+    skill_edit_cancel()
+    const setbox = document.querySelector('.skill-setting-box')
+    setbox.classList.remove('active')
+    setbox.classList.add('fade-out')
+    setTimeout(() => {
+        setbox.classList.remove('fade-out')
+        setbox.style.display = "none"
+        document.body.classList.remove('mask')
+    }, 150)
+}
+
+function skill_edit_cancel() {
+    const setbox = document.querySelector('.skill-edit-box')
+    setbox.classList.remove('active')
+    setbox.classList.add('fade-out')
+    setTimeout(() => {
+        setbox.classList.remove('fade-out')
+        setbox.style.display = "none"
+    }, 150)
+}
+
+function skill_edit_save(){
+    // Skills编辑保存按钮事件
+    const skill_edit_box = document.querySelector(".skill-edit-box")
+    const skill_name = skill_edit_box.querySelector("#skill-edit-title").textContent
+    const skill_description = skill_edit_box.querySelector("#skill-description").textContent
+    const skill_body = skill_edit_box.querySelector("#skill-body").innerText
+    axios.post('/api/skill/edit', {
+        skill_name: skill_name,
+        skill_description: skill_description,
+        skill_body: skill_body
+    })
+    .then(response => {
+        // 获取返回的 JSON 数据
+        console.log(response.data)
+        if (response.data.code === 1) {
+            skill_edit_cancel()
+            console.log(response.data.msg)
+            alert(response.data.msg)
+        } else {
+            console.log(response.data.msg)
+            alert(response.data.msg)
+        }
+    })
+    .catch(error => {
+        // 如果有错误则输出到控制台
+        console.error('请求出错:', error)
+    })
 }
 
 document.querySelector('.knowledge-setting-box #chatset').addEventListener("click", function (e) {
@@ -300,6 +354,7 @@ document.querySelector('.knowledge-setting-box #setbox-cancel').addEventListener
 document.querySelector('.global-setting-box #setbox-cancel').addEventListener("click", global_setting_cancel)
 document.querySelector('.mcpserver-setting-box #setbox-cancel').addEventListener("click", mcpserver_setting_cancel)
 document.querySelector('.mcp-add-server-box #mcp-add-cancel').addEventListener("click", mcp_add_server_cancel)
-
-
+document.querySelector('.skill-setting-box #setbox-cancel').addEventListener("click", skill_setting_cancel)
+document.querySelector('.skill-edit-box #skill-edit-cancel').addEventListener("click", skill_edit_cancel)
+document.querySelector('.skill-edit-box #skill-edit-save').addEventListener("click", skill_edit_save)
 

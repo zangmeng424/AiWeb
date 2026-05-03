@@ -760,7 +760,8 @@ async function send_msg(userMsgToRollback = null) {
     //获取对话信息
     const session_id = localStorage.getItem('lastsessid')
     //加载历史对话
-    const max_take = Number(document.querySelector("#chat-area #max-take-now").value)
+    let max_take = Number(document.querySelector("#chat-area #max-take-now").value)
+    max_take = max_take === 0 ? 999 : max_take
     const task_data = []
 
     // 获取所有消息节点
@@ -959,7 +960,7 @@ async function send_msg(userMsgToRollback = null) {
                     }
                     tool_call_box.querySelector(".tools-call-params .tools-content").innerText += data.choices[0].delta.tool_calls[0].function.arguments ? data.choices[0].delta.tool_calls[0].function.arguments : ""
                 }
-                else if (data.choices[0].finish_reason === "stop") {
+                else if (!data.choices || data.choices.length === 0 || data.choices[0].finish_reason === "stop") {
                     assistantDiv.querySelector(".assistant-more-info").innerText = `used tokens: ${data.usage ? data.usage.total_tokens : "NULL"},model: ${data.model}`
                     if (! (localStorage.getItem("on_moreinfo") !== 'false'))
                         assistantDiv.querySelector(".assistant-more-info").style.display = "none"
@@ -1276,13 +1277,6 @@ function open_setting_box(element){
     }, 10)
 }
 
-function close_setting_box(element){
-    element.classList.remove('active')
-    setTimeout(() => {
-        element.style.display = "none"
-        document.body.classList.remove('mask')
-    }, 300)
-}
 
 //页面初始化
 !(async function () {
@@ -1451,6 +1445,174 @@ function close_setting_box(element){
             this.innerText = '确认添加'
         }
     })
+
+    // Skills按钮点击事件
+    document.querySelector("#skill-setting").addEventListener("click", async function (e) {
+        e.preventDefault()
+        const setbox = document.querySelector('.skill-setting-box')
+        open_setting_box(setbox)
+        const skillList = setbox.querySelector("#skill-list")
+        
+        await loadSkills(skillList)
+    })
+
+    // Skills重新加载按钮事件
+    document.querySelector("#skill-reload-btn").addEventListener("click", async function() {
+        this.disabled = true
+        this.innerText = '加载中...'
+        document.querySelector("#skill_reload_tips").innerText = "加载中..."
+        
+        try {
+            const res = await axios.get('/api/skill/reload')
+            if (res.data.code === 1) {
+                const container = document.querySelector('#skill-list')
+                await loadSkills(container)
+            } else {
+                alert('重新加载失败: ' + res.data.msg)
+            }
+        } catch (err) {
+            console.error('重新加载失败:', err)
+            alert('重新加载失败，请查看控制台')
+        } finally {
+            document.querySelector("#skill_reload_tips").innerText = ""
+            this.disabled = false
+            this.innerText = '重新加载'
+        }
+    })
+
+    // Skills重新加载按钮事件
+    document.querySelector("#skill-add-btn").addEventListener("click", function() {
+        // 打开编辑弹窗
+        const editBox = document.querySelector('.skill-edit-box')
+        document.querySelector("#skill-edit-title").innerText = "点此修改skill名称"
+        document.querySelector("#skill-edit-title").contentEditable = true
+        document.querySelector("#skill-description").innerText = "skill描述"
+        document.querySelector("#skill-body").innerText = "skill内容"
+        open_setting_box(editBox)
+    })
+
+    
+    // 加载Skills列表的函数
+    async function loadSkills(container) {
+        container.innerHTML = '<div style="text-align: center; padding: 20px;">加载中...</div>'
+        
+        try {
+            const response = await axios.get('/api/skill')
+            console.log(response.data)
+            
+            if (response.data.code === 1) {
+                const skillsData = response.data.data
+                container.innerHTML = ''
+                
+                if (!skillsData || skillsData.length === 0) {
+                    container.innerHTML = '<div style="text-align: center; padding: 20px; color: #666;">暂无Skills</div>'
+                    return
+                }
+                
+                // 遍历每个skill
+                skillsData.forEach(skillData => {
+                    const skillName = skillData.name
+                    const skillDescription = skillData.description || ''
+                    const skillBody = skillData.body || ''
+                    
+                    // 创建skill容器
+                    const skillDiv = document.createElement('div')
+                    skillDiv.className = 'skill-item-container'
+                    
+                    // skill标题行
+                    const skillTitleRow = document.createElement('div')
+                    skillTitleRow.className = 'skill-title'
+
+                    
+                    // 左侧：skill名称
+                    const leftSide = document.createElement('div')
+                    leftSide.className = 'skill-name-box'
+
+                    
+                    const skillTitle = document.createElement('h3')
+                    skillTitle.className = 'skill-name-text'
+                    skillTitle.innerText = skillName
+                    leftSide.appendChild(skillTitle)
+                    
+                    skillTitleRow.appendChild(leftSide)
+                    
+                    // 右侧：编辑按钮
+                    const rightSide = document.createElement('div')
+                    rightSide.style.display = 'flex'
+                    rightSide.style.alignItems = 'center'
+                    rightSide.style.gap = '10px'
+                    
+                    const editBtn = document.createElement('button')
+                    editBtn.innerText = '编辑'
+                    editBtn.className = 'skill-edit-btn'
+                    editBtn.onmouseover = () => editBtn.style.backgroundColor = '#0056b3'
+                    editBtn.onmouseout = () => editBtn.style.backgroundColor = '#007bff'
+                    editBtn.onclick = function() {
+                        // 打开编辑弹窗
+                        const editBox = document.querySelector('.skill-edit-box')
+                        document.querySelector("#skill-edit-title").innerText = skillName
+                        document.querySelector("#skill-edit-title").contentEditable = false
+                        document.querySelector("#skill-description").innerText = skillDescription
+                        document.querySelector("#skill-body").innerText = skillBody
+                        open_setting_box(editBox)
+                    }
+                    rightSide.appendChild(editBtn)
+
+                    // 删除按钮
+                    const deleteBtn = document.createElement('button')
+                    deleteBtn.innerText = '删除'
+                    deleteBtn.style.padding = '4px 12px'
+                    deleteBtn.style.fontSize = '13px'
+                    deleteBtn.style.margin = '0'
+                    deleteBtn.style.backgroundColor = '#dc3545'
+                    deleteBtn.onmouseover = () => deleteBtn.style.backgroundColor = '#c82333'
+                    deleteBtn.onmouseout = () => deleteBtn.style.backgroundColor = '#dc3545'
+                    deleteBtn.onclick = async function(e) {
+                        e.stopPropagation()
+
+                        deleteBtn.disabled = true
+                        deleteBtn.innerText = '删除中...'
+
+                        try {
+                            const res = await axios.delete(`/api/skill/delete/${skillTitle.innerText}`)
+                            if (res.data.code === 1) {
+                                alert(res.data.msg)
+                                document.querySelector("#skill-reload-btn").click()
+                            } else {
+                                alert('删除失败: ' + res.data.msg)
+                                deleteBtn.disabled = false
+                                deleteBtn.innerText = '删除'
+                            }
+                        } catch (err) {
+                            console.error('删除失败:', err)
+                            alert('删除失败，请查看控制台')
+                            deleteBtn.disabled = false
+                            deleteBtn.innerText = '删除'
+                        }
+                    }
+                    rightSide.appendChild(deleteBtn)
+
+
+
+                    skillTitleRow.appendChild(rightSide)
+                    skillDiv.appendChild(skillTitleRow)
+                    
+                    // skill描述
+                    const descDiv = document.createElement('div')
+                    descDiv.className = 'skill-description'
+                    descDiv.innerText = skillDescription
+                    skillDiv.appendChild(descDiv)
+                    
+                    container.appendChild(skillDiv)
+                })
+            } else {
+                container.innerHTML = '<div style="text-align: center; padding: 20px; color: #f00;">加载失败: ' + response.data.msg + '</div>'
+            }
+        } catch (error) {
+            console.error('请求出错:', error)
+            container.innerHTML = '<div style="text-align: center; padding: 20px; color: #f00;">加载失败，请检查网络连接</div>'
+        }
+    }
     
     // 加载MCP服务器列表的函数
     async function loadMcpServers(container) {
@@ -1506,67 +1668,43 @@ function close_setting_box(element){
                         // 创建服务容器
                         const serviceDiv = document.createElement('div')
                         serviceDiv.className = 'mcp-service-container'
-                        serviceDiv.style.marginBottom = '20px'
-                        serviceDiv.style.padding = '15px'
-                        serviceDiv.style.border = '1px solid #ddd'
-                        serviceDiv.style.borderRadius = '8px'
-                        serviceDiv.style.backgroundColor = '#f9f9f9'
                         
                         // 服务标题行（包含按钮和标题）
                         const serviceTitleRow = document.createElement('div')
-                        serviceTitleRow.style.display = 'flex'
-                        serviceTitleRow.style.alignItems = 'center'
-                        serviceTitleRow.style.justifyContent = 'space-between'
-                        serviceTitleRow.style.marginBottom = '15px'
+                        serviceTitleRow.className = 'mcp-service-title-row'
                         
                         // 左侧：展开按钮 + 标题
                         const leftSide = document.createElement('div')
-                        leftSide.style.display = 'flex'
-                        leftSide.style.alignItems = 'center'
-                        leftSide.style.cursor = 'pointer'
-                        leftSide.style.userSelect = 'none'
-                        leftSide.style.flex = '1'
+                        leftSide.className = 'mcp-service-left'
                         
                         // 展开/收起按钮（默认收起状态）
                         const toggleBtn = document.createElement('span')
                         toggleBtn.className = 'mcp-toggle-btn'
                         toggleBtn.innerHTML = '▼'
-                        toggleBtn.style.fontSize = '14px'
-                        toggleBtn.style.color = '#666'
-                        toggleBtn.style.transition = 'transform 0.3s ease'
-                        toggleBtn.style.display = 'inline-block'
-                        toggleBtn.style.marginRight = '10px'
-                        toggleBtn.style.minWidth = '16px'
-                        toggleBtn.style.transform = 'rotate(-90deg)'
                         leftSide.appendChild(toggleBtn)
                         
                         // 服务标题
                         const serviceTitle = document.createElement('h3')
                         serviceTitle.innerText = serviceName
-                        serviceTitle.style.margin = '0'
-                        serviceTitle.style.color = serverData.enabled ? '#333' : '#999'
-                        serviceTitle.style.fontSize = '18px'
+                        serviceTitle.className = 'mcp-service-title'
+                        if (!serverData.enabled) {
+                            serviceTitle.classList.add('disabled')
+                        }
                         leftSide.appendChild(serviceTitle)
                         
                         // 状态标签
                         const statusBadge = document.createElement('span')
+                        statusBadge.className = 'mcp-status-badge'
                         statusBadge.style.marginLeft = '10px'
-                        statusBadge.style.padding = '2px 8px'
-                        statusBadge.style.borderRadius = '3px'
-                        statusBadge.style.fontSize = '12px'
-                        statusBadge.style.fontWeight = 'normal'
                         if (serverData.is_loaded) {
                             statusBadge.innerText = '已加载'
-                            statusBadge.style.backgroundColor = '#d4edda'
-                            statusBadge.style.color = '#155724'
+                            statusBadge.classList.add('loaded')
                         } else if (serverData.enabled) {
                             statusBadge.innerText = '未加载'
-                            statusBadge.style.backgroundColor = '#fff3cd'
-                            statusBadge.style.color = '#856404'
+                            statusBadge.classList.add('unloaded')
                         } else {
                             statusBadge.innerText = '已禁用'
-                            statusBadge.style.backgroundColor = '#f8d7da'
-                            statusBadge.style.color = '#721c24'
+                            statusBadge.classList.add('disabled')
                         }
                         leftSide.appendChild(statusBadge)
                         
@@ -1574,9 +1712,7 @@ function close_setting_box(element){
                         
                         // 右侧：删除按钮 + 启用/禁用开关
                         const rightSide = document.createElement('div')
-                        rightSide.style.display = 'flex'
-                        rightSide.style.alignItems = 'center'
-                        rightSide.style.gap = '10px'
+                        rightSide.className = 'mcp-service-right'
                         
                         // 删除按钮
                         const deleteBtn = document.createElement('button')
@@ -1584,11 +1720,6 @@ function close_setting_box(element){
                         deleteBtn.style.padding = '4px 12px'
                         deleteBtn.style.fontSize = '13px'
                         deleteBtn.style.backgroundColor = '#dc3545'
-                        deleteBtn.style.color = 'white'
-                        deleteBtn.style.border = 'none'
-                        deleteBtn.style.borderRadius = '4px'
-                        deleteBtn.style.cursor = 'pointer'
-                        deleteBtn.style.transition = 'background-color 0.2s'
                         deleteBtn.onmouseover = () => deleteBtn.style.backgroundColor = '#c82333'
                         deleteBtn.onmouseout = () => deleteBtn.style.backgroundColor = '#dc3545'
                         deleteBtn.onclick = async function(e) {
@@ -1678,40 +1809,25 @@ function close_setting_box(element){
                         // 工具列表容器（默认收起）
                         const toolsContainer = document.createElement('div')
                         toolsContainer.className = 'mcp-tools-container'
-                        toolsContainer.style.maxHeight = '0px'
-                        toolsContainer.style.overflow = 'hidden'
-                        toolsContainer.style.transition = 'max-height 0.3s ease, opacity 0.3s ease'
-                        toolsContainer.style.opacity = '0'
                         
                         // 遍历该服务的工具（如果有）
                         if (Object.keys(serviceTools).length > 0) {
                             Object.keys(serviceTools).forEach(toolName => {
                                 const tool = serviceTools[toolName]
-                            
+
                             const toolDiv = document.createElement('div')
-                            toolDiv.style.marginBottom = '15px'
-                            toolDiv.style.padding = '12px'
-                            toolDiv.style.backgroundColor = '#fff'
-                            toolDiv.style.border = '1px solid #e0e0e0'
-                            toolDiv.style.borderRadius = '5px'
+                            toolDiv.className = 'mcp-tool-item'
                             
                             // 工具名称
                             const toolNameDiv = document.createElement('div')
-                            toolNameDiv.style.fontWeight = 'bold'
-                            toolNameDiv.style.color = '#0066cc'
-                            toolNameDiv.style.marginBottom = '8px'
-                            toolNameDiv.style.fontSize = '14px'
+                            toolNameDiv.className = 'mcp-tool-name'
                             toolNameDiv.innerText = tool.name
                             toolDiv.appendChild(toolNameDiv)
                             
                             // 工具描述
                             if (tool.description) {
                                 const descDiv = document.createElement('div')
-                                descDiv.style.color = '#666'
-                                descDiv.style.marginBottom = '8px'
-                                descDiv.style.fontSize = '13px'
-                                descDiv.style.lineHeight = '1.5'
-                                descDiv.style.whiteSpace = 'pre-wrap'
+                                descDiv.className = 'mcp-tool-description'
                                 descDiv.innerText = tool.description
                                 toolDiv.appendChild(descDiv)
                             }
@@ -1719,29 +1835,25 @@ function close_setting_box(element){
                             // 参数信息
                             if (tool.parameters && tool.parameters.properties) {
                                 const paramsDiv = document.createElement('div')
-                                paramsDiv.style.marginTop = '8px'
-                                paramsDiv.style.fontSize = '12px'
-                                paramsDiv.style.color = '#555'
-                                
+                                paramsDiv.className = 'mcp-tool-params'
+
                                 const paramsTitle = document.createElement('div')
-                                paramsTitle.style.fontWeight = 'bold'
-                                paramsTitle.style.marginBottom = '5px'
+                                paramsTitle.className = 'mcp-tool-params-title'
                                 paramsTitle.innerText = '参数:'
                                 paramsDiv.appendChild(paramsTitle)
-                                
+
                                 const paramsList = document.createElement('ul')
-                                paramsList.style.margin = '0'
-                                paramsList.style.paddingLeft = '20px'
-                                
+                                paramsList.className = 'mcp-tool-params-list'
+
                                 Object.keys(tool.parameters.properties).forEach(paramName => {
                                     const param = tool.parameters.properties[paramName]
                                     const paramItem = document.createElement('li')
-                                    paramItem.style.marginBottom = '3px'
+                                    paramItem.className = 'mcp-tool-params-item'
                                     const required = tool.parameters.required && tool.parameters.required.includes(paramName) ? ' (必需)' : ' (可选)'
-                                    paramItem.innerHTML = `<span style="color: #0066cc;">${paramName}</span>: ${param.type || 'any'}${required}`
+                                    paramItem.innerHTML = `<span class="mcp-param-name">${paramName}</span>: ${param.type || 'any'}${required}`
                                     paramsList.appendChild(paramItem)
                                 })
-                                
+
                                 paramsDiv.appendChild(paramsList)
                                 toolDiv.appendChild(paramsDiv)
                             }
@@ -1751,10 +1863,7 @@ function close_setting_box(element){
                         } else {
                             // 如果没有工具，显示提示
                             const noToolsDiv = document.createElement('div')
-                            noToolsDiv.style.padding = '12px'
-                            noToolsDiv.style.color = '#999'
-                            noToolsDiv.style.fontSize = '13px'
-                            noToolsDiv.style.textAlign = 'center'
+                            noToolsDiv.className = 'mcp-no-tools'
                             noToolsDiv.innerText = serverData.enabled ? '服务未加载或无可用工具' : '服务已禁用'
                             toolsContainer.appendChild(noToolsDiv)
                         }
@@ -1763,18 +1872,16 @@ function close_setting_box(element){
                         
                         // 添加点击事件：收起/展开（只在左侧区域触发）
                         leftSide.addEventListener('click', function() {
-                            const isCollapsed = toolsContainer.style.maxHeight === '0px'
-                            
+                            const isCollapsed = toolsContainer.classList.contains('expanded')
+
                             if (isCollapsed) {
                                 // 展开
-                                toolsContainer.style.maxHeight = '2000px'
-                                toolsContainer.style.opacity = '1'
-                                toggleBtn.style.transform = 'rotate(0deg)'
+                                toolsContainer.classList.remove('expanded')
+                                toggleBtn.style.transform = 'rotate(-90deg)'
                             } else {
                                 // 收起
-                                toolsContainer.style.maxHeight = '0px'
-                                toolsContainer.style.opacity = '0'
-                                toggleBtn.style.transform = 'rotate(-90deg)'
+                                toolsContainer.classList.add('expanded')
+                                toggleBtn.style.transform = 'rotate(0deg)'
                             }
                         })
                         

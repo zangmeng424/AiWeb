@@ -49,6 +49,8 @@ def change_task_setting_dao(data:dict) -> bool:
     sql = "UPDATE chat_menu SET max_take=%s, model=%s, `system`=%s, title=%s, temperature=%s, top_p=%s, avatar=%s WHERE session_id=%s"
     db.execute(sql, (max_take, model, system, task_name, temperature, top_p, avatar, session_id,))
 
+    redis.delete('task_list')
+
     return True
 
 

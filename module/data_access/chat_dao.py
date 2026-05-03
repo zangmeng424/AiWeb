@@ -71,12 +71,13 @@ async def ai_update_repository_dao(model: str, base_url: str, api_key: str, user
     resp=openai_tmp(temperature=0, top_p=1, model=model, base_url=base_url, api_key=api_key, messages=messages,stream=False)
     try:
         repo_info=json.loads(resp.choices[0].message.content.replace("'", '"'))
-        logger.info(f"AI 知识库更新结果:\n{repo_info}")
-        for repo_item in repo_info:
-            if repo_item["intent"] == "add":
-                kb.add(repo_item["key_info"])
-            elif repo_item["intent"] == "delete":
-                kb.delete(repo_item["key_info"])
+        if repo_info:
+            logger.info(f"AI 知识库更新结果:\n{repo_info}")
+            for repo_item in repo_info:
+                if repo_item["intent"] == "add":
+                    kb.add(repo_item["key_info"])
+                elif repo_item["intent"] == "delete":
+                    kb.delete(repo_item["key_info"])
 
     except Exception:
         logger.exception("知识库更新失败")
